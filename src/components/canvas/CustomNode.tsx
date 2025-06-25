@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import { Settings, X, Check } from 'lucide-react';
@@ -15,12 +16,13 @@ interface CustomNodeProps {
 
 export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isEmojiGalleryOpen, setIsEmojiGalleryOpen] = useState(false);
   const [tempLabel, setTempLabel] = useState(data.label);
   const [tempIcon, setTempIcon] = useState(data.customIcon || '📝');
   const [tempColor, setTempColor] = useState(data.customColor || '#6B7280');
   const cardRef = useRef<HTMLDivElement>(null);
   
-  const isConnecting = useStore((state) => !!state.connectionStartHandle);
+  const isConnecting = useStore((state) => !!state.connectionClickStartHandle);
 
   // Reset temp values when editing starts
   useEffect(() => {
@@ -67,6 +69,7 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
       });
     }
     setIsEditing(false);
+    setIsEmojiGalleryOpen(false);
   }, [id, tempLabel, tempIcon, tempColor, onUpdateNode]);
 
   const handleCancel = useCallback(() => {
@@ -74,6 +77,7 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
     setTempIcon(data.customIcon || '📝');
     setTempColor(data.customColor || '#6B7280');
     setIsEditing(false);
+    setIsEmojiGalleryOpen(false);
   }, [data.label, data.customIcon, data.customColor]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -85,6 +89,11 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
       handleCancel();
     }
   }, [handleSave, handleCancel]);
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setTempIcon(emoji);
+    setIsEmojiGalleryOpen(false);
+  }, []);
 
   const colorOptions = [
     '#6B7280', '#EF4444', '#F97316', '#EAB308', 
@@ -177,12 +186,14 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
                   <label className="block text-sm font-medium mb-2">Ícone</label>
                   <div className="flex items-center space-x-2 mb-3">
                     <span className="text-2xl">{tempIcon}</span>
-                    <span className="text-sm text-gray-600">Ícone atual</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEmojiGalleryOpen(true)}
+                    >
+                      Escolher Emoji
+                    </Button>
                   </div>
-                  <EmojiGallery
-                    onEmojiSelect={(emoji) => setTempIcon(emoji)}
-                    selectedEmoji={tempIcon}
-                  />
                 </div>
 
                 <div>
@@ -234,6 +245,13 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
           </Card>
         </div>
       )}
+
+      <EmojiGallery
+        isOpen={isEmojiGalleryOpen}
+        onClose={() => setIsEmojiGalleryOpen(false)}
+        onEmojiSelect={handleEmojiSelect}
+        currentEmoji={tempIcon}
+      />
     </>
   );
 };

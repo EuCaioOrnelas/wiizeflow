@@ -1,6 +1,7 @@
+
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/theme-provider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -18,10 +19,12 @@ import PaymentCanceled from "@/pages/PaymentCanceled";
 import NotFound from "@/pages/NotFound";
 import { Routes, Route } from "react-router-dom";
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <BrowserRouter>
-      <QueryClient>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
           <Toaster />
           <Routes>
@@ -41,7 +44,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ThemeProvider>
-      </QueryClient>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }

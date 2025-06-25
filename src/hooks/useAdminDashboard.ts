@@ -13,13 +13,6 @@ interface AdminStats {
   projected_monthly_revenue: number;
 }
 
-interface CreateUserResponse {
-  success?: boolean;
-  error?: string;
-  user_id?: string;
-  message?: string;
-}
-
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -191,42 +184,93 @@ export const useAdminDashboard = () => {
 
   const createUser = async (email: string, password: string, name: string, planType: string, subscriptionPeriod: string) => {
     try {
-      const { data, error } = await supabase.rpc('create_admin_user', {
-        user_email: email,
-        user_password: password,
-        user_name: name,
-        plan_type: planType,
-        subscription_period: subscriptionPeriod
+      console.log('Creating new user:', { email, name, planType, subscriptionPeriod });
+
+      // Calcular data de expiração baseada no período
+      let expiresAt = null;
+      if (planType !== 'free') {
+        switch (subscriptionPeriod) {
+          case 'monthly':
+            expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case 'annual':
+            expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case 'lifetime':
+            expiresAt = null;
+            break;
+          default:
+            expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      }
+
+      // Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        user_metadata: {
+          name: name,
+          full_name: name
+        },
+        email_confirm: true
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        throw new Error(authError.message);
       }
 
-      const response = data as CreateUserResponse;
-
-      if (response?.error) {
-        throw new Error(response.error);
+      if (!authData.user) {
+        throw new Error('Falha ao criar usuário no sistema de autenticação');
       }
+
+      console.log('Auth user created:', authData.user.id);
+
+      // Criar perfil do usuário na tabela profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: email,
+          name: name,
+          plan_type: planType,
+          subscription_status: planType === 'free' ? 'active' : 'active',
+          subscription_expires_at: expiresAt,
+          funnel_count: 0
+        });
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
+        // Se houver erro ao criar o perfil, tentar deletar o usuário de auth
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw new Error('Erro ao criar perfil do usuário: ' + profileError.message);
+      }
+
+      console.log('User profile created successfully');
 
       toast({
         title: "Sucesso",
-        description: "Usuário criado com sucesso!",
+        description: `Usuário ${name} criado com sucesso!`,
         variant: "default",
       });
 
-      // Recarregar estatísticas
-      loadDashboardStats();
+      // Recarregar estatísticas para refletir o novo usuário
+      await loadDashboardStats();
 
-      return { success: true };
+      return { success: true, userId: authData.user.id };
+
     } catch (error: any) {
       console.error('Error creating user:', error);
+      
+      const errorMessage = error.message || "Erro inesperado ao criar usuário";
+      
       toast({
         title: "Erro",
-        description: error.message || "Erro ao criar usuário.",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: error.message };
+      
+      return { success: false, error: errorMessage };
     }
   };
 

@@ -287,7 +287,7 @@ export const CustomNode = ({ id, data, onUpdateNode, onUpdateContent }: CustomNo
 
       {/* Content Editor */}
       <ContentEditor
-        node={{ id, data }}
+        node={{ id, data, position: { x: 0, y: 0 }, type: 'custom' }}
         isOpen={isContentEditorOpen}
         onClose={() => setIsContentEditorOpen(false)}
         onSave={handleContentSave}

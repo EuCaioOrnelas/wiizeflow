@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +6,6 @@ import {
   Save, 
   Undo, 
   Redo, 
-  Download, 
-  FileText,
   Edit3,
   Check,
   X,
@@ -22,10 +19,8 @@ interface CanvasHeaderProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  onExportAsImage: () => void;
-  onExportAsPDF: () => void;
   onSave: () => void;
-  onOpenTemplateManager: () => void;
+  onOpenTemplateManager?: () => void;
 }
 
 export const CanvasHeader = ({
@@ -35,8 +30,6 @@ export const CanvasHeader = ({
   onRedo,
   canUndo,
   canRedo,
-  onExportAsImage,
-  onExportAsPDF,
   onSave,
   onOpenTemplateManager
 }: CanvasHeaderProps) => {
@@ -137,37 +130,17 @@ export const CanvasHeader = ({
           </div>
 
           {/* Templates */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onOpenTemplateManager}
-            title="Gerenciar Templates"
-          >
-            <FolderOpen className="w-4 h-4" />
-            Templates
-          </Button>
-
-          {/* Export */}
-          <div className="flex items-center space-x-1">
+          {onOpenTemplateManager && (
             <Button
               size="sm"
               variant="outline"
-              onClick={onExportAsImage}
-              title="Exportar como PNG"
+              onClick={onOpenTemplateManager}
+              title="Gerenciar Templates"
             >
-              <Download className="w-4 h-4" />
-              PNG
+              <FolderOpen className="w-4 h-4" />
+              Templates
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onExportAsPDF}
-              title="Exportar como PDF"
-            >
-              <FileText className="w-4 h-4" />
-              PDF
-            </Button>
-          </div>
+          )}
 
           {/* Save */}
           <Button

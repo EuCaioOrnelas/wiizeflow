@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Builder from "./pages/Builder";
 import Pricing from "./pages/Pricing";
-import Pricing2 from "./pages/Pricing2";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import AdminAuth from "./pages/AdminAuth";
@@ -35,7 +34,6 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/builder/:id" element={<Builder />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/pricing2" element={<Pricing2 />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />

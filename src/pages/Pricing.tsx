@@ -49,7 +49,7 @@ const Pricing = () => {
       buttonText: "Assinar Mensal",
       popular: false,
       color: "blue",
-      priceId: "price_1RdfWZQFkphRyjSA3oNlNfiK"
+      priceId: "price_1RdhpHG1GdQ2ZjmFmYXfEFJa"
     },
     {
       name: "Anual",
@@ -74,7 +74,7 @@ const Pricing = () => {
       buttonText: "Assinar Anual",
       popular: true,
       color: "green",
-      priceId: "price_1RdfX2QFkphRyjSANdSPAZUq"
+      priceId: "price_1RdhqYG1GdQ2ZjmFlAOaBr4A"
     }
   ];
 

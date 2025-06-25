@@ -127,38 +127,53 @@ export const useAdminDashboard = () => {
 
   const loadDashboardStats = async () => {
     try {
+      console.log('Loading dashboard stats...');
+      
       // Carregar todos os perfis diretamente
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('plan_type, subscription_status, subscription_expires_at, created_at');
+        .select('id, plan_type, subscription_status, subscription_expires_at, created_at');
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
         return;
       }
 
-      console.log('Loaded profiles:', profiles);
+      console.log('Loaded profiles:', profiles?.length, 'profiles');
+
+      if (!profiles) {
+        console.log('No profiles found');
+        setStats({
+          online_users: 0,
+          total_users: 0,
+          free_users: 0,
+          monthly_users: 0,
+          annual_users: 0,
+          projected_monthly_revenue: 0,
+        });
+        return;
+      }
 
       // Calcular usuários online (simulação - considerar usuários criados nas últimas 24h como ativos)
-      const onlineUsers = profiles?.filter(p => {
+      const now = new Date();
+      const onlineUsers = profiles.filter(p => {
         const created = new Date(p.created_at);
-        const now = new Date();
         const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
         return diffHours <= 24;
-      }).length || 0;
+      }).length;
 
       // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
-      const activeProfiles = profiles?.filter(p => {
+      const activeProfiles = profiles.filter(p => {
         if (p.plan_type === 'free') return true;
         if (p.subscription_status !== 'active' && p.subscription_status !== 'pending_activation') return false;
         if (p.subscription_expires_at) {
-          return new Date(p.subscription_expires_at) > new Date();
+          return new Date(p.subscription_expires_at) > now;
         }
         return true;
-      }) || [];
+      });
 
-      const totalUsers = profiles?.length || 0;
-      const freeUsers = profiles?.filter(p => p.plan_type === 'free').length || 0;
+      const totalUsers = profiles.length;
+      const freeUsers = profiles.filter(p => p.plan_type === 'free').length;
       const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
       const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
       
@@ -170,7 +185,8 @@ export const useAdminDashboard = () => {
         freeUsers,
         monthlyUsers,
         annualUsers,
-        projectedRevenue
+        projectedRevenue,
+        onlineUsers
       });
 
       setStats({

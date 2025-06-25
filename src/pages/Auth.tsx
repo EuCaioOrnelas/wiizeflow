@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,13 +34,36 @@ const Auth = () => {
   useEffect(() => {
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth event:', event, 'Session:', session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Redirecionar para dashboard quando autenticado
+        if (session?.user && event === 'SIGNED_IN') {
+          // Garantir que o perfil do usuário existe
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!existingProfile) {
+            // Criar perfil se não existir
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.name || name,
+                plan_type: 'free',
+                funnel_count: 0
+              });
+
+            if (profileError) {
+              console.error('Error creating profile:', profileError);
+            }
+          }
+
           console.log('User authenticated, redirecting to dashboard');
           window.location.href = '/dashboard';
         }
@@ -59,7 +83,7 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [name]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +92,7 @@ const Auth = () => {
     try {
       console.log('Attempting login for:', email);
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -87,12 +111,6 @@ const Auth = () => {
             description: "Verifique seu email e clique no link de confirmação.",
             variant: "destructive",
           });
-        } else if (error.message.includes('Invalid URL') || error.message.includes('redirect')) {
-          toast({
-            title: "Erro de Configuração",
-            description: "Problema de configuração de URL. Entre em contato com o suporte.",
-            variant: "destructive",
-          });
         } else {
           toast({
             title: "Erro de Login",
@@ -103,11 +121,13 @@ const Auth = () => {
         return;
       }
 
-      console.log('Login successful');
-      toast({
-        title: "Login realizado!",
-        description: "Redirecionando para o dashboard...",
-      });
+      if (data.user) {
+        console.log('Login successful');
+        toast({
+          title: "Login realizado!",
+          description: "Redirecionando para o dashboard...",
+        });
+      }
       
     } catch (error: any) {
       console.error('Unexpected login error:', error);
@@ -138,13 +158,12 @@ const Auth = () => {
     try {
       console.log('Attempting signup for:', email);
       
-      // Detectar se estamos em produção ou desenvolvimento
       const currentOrigin = window.location.origin;
       const redirectUrl = `${currentOrigin}/`;
       
       console.log('Using redirect URL:', redirectUrl);
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -209,7 +228,11 @@ const Auth = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Target className="w-10 h-10 text-green-600" />
+            <img 
+              src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
+              alt="WiizeFlow Logo" 
+              className="w-10 h-10"
+            />
             <span className="text-3xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">

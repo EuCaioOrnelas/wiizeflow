@@ -383,6 +383,7 @@ const InfiniteCanvasInner = ({
             maxZoom={4}
             attributionPosition="bottom-left"
             nodeOrigin={[0.5, 0.5]}
+            connectionMode="loose"
           >
             <Controls />
             <MiniMap 

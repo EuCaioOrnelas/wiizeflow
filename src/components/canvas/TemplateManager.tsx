@@ -1,267 +1,260 @@
 
-import { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useTemplateOperations } from '@/hooks/useTemplateOperations';
-import { Template } from '@/types/canvas';
-import { Download, Upload, Trash2, Save, FolderOpen } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Layout, 
+  Users, 
+  Target, 
+  Download, 
+  Crown,
+  Lock
+} from 'lucide-react';
+import { Node, Edge } from '@xyflow/react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-interface TemplateManagerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLoadTemplate: (template: Template) => void;
-  onSaveTemplate: () => { nodes: any[], edges: any[] };
+interface Template {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  nodes: Node[];
+  edges: Edge[];
+  icon: React.ReactNode;
 }
 
-export const TemplateManager = ({ 
-  isOpen, 
-  onClose, 
-  onLoadTemplate, 
-  onSaveTemplate 
-}: TemplateManagerProps) => {
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface TemplateManagerProps {
+  onLoadTemplate: (nodes: Node[], edges: Edge[]) => void;
+  onClose: () => void;
+}
 
-  const { 
-    saveTemplate, 
-    loadTemplates, 
-    deleteTemplate, 
-    exportTemplate, 
-    importTemplate 
-  } = useTemplateOperations();
+const TemplateManager: React.FC<TemplateManagerProps> = ({ onLoadTemplate, onClose }) => {
+  const [loading, setLoading] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>('free');
+  const { toast } = useToast();
 
-  const handleOpen = () => {
-    setTemplates(loadTemplates());
-  };
+  React.useEffect(() => {
+    checkUserPlan();
+  }, []);
 
-  const handleSaveTemplate = () => {
-    if (templateName.trim()) {
-      const { nodes, edges } = onSaveTemplate();
-      saveTemplate(templateName, templateDescription, nodes, edges);
-      setTemplateName('');
-      setTemplateDescription('');
-      setShowSaveDialog(false);
-      setTemplates(loadTemplates());
+  const checkUserPlan = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan_type')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profile) {
+          setUserPlan(profile.plan_type || 'free');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user plan:', error);
     }
   };
 
-  const handleDeleteTemplate = (templateId: string) => {
-    deleteTemplate(templateId);
-    setTemplates(loadTemplates());
-    setTemplateToDelete(null);
-  };
+  const templates: Template[] = [
+    {
+      id: 'sales-funnel',
+      name: 'Funil de Vendas Básico',
+      description: 'Template para captura de leads e conversão',
+      category: 'Vendas',
+      icon: <Target className="w-6 h-6" />,
+      nodes: [
+        {
+          id: 'landing',
+          type: 'custom',
+          position: { x: 100, y: 100 },
+          data: { 
+            name: 'Página de Captura',
+            icon: 'Layout',
+            content: {
+              title: 'Oferta Especial',
+              description: 'Descubra como aumentar suas vendas',
+              items: []
+            }
+          }
+        },
+        {
+          id: 'thanks',
+          type: 'custom', 
+          position: { x: 100, y: 300 },
+          data: {
+            name: 'Página de Obrigado',
+            icon: 'Users',
+            content: {
+              title: 'Obrigado!',
+              description: 'Verifique seu email',
+              items: []
+            }
+          }
+        }
+      ],
+      edges: [
+        {
+          id: 'landing-thanks',
+          source: 'landing',
+          target: 'thanks',
+          type: 'smoothstep'
+        }
+      ]
+    },
+    {
+      id: 'lead-magnet',
+      name: 'Funil Lead Magnet',
+      description: 'Captura de leads com material gratuito',
+      category: 'Marketing',
+      icon: <Download className="w-6 h-6" />,
+      nodes: [
+        {
+          id: 'opt-in',
+          type: 'custom',
+          position: { x: 100, y: 100 },
+          data: {
+            name: 'Opt-in',
+            icon: 'Download',
+            content: {
+              title: 'Material Gratuito',
+              description: 'Baixe nosso guia exclusivo',
+              items: []
+            }
+          }
+        },
+        {
+          id: 'delivery',
+          type: 'custom',
+          position: { x: 100, y: 300 },
+          data: {
+            name: 'Entrega',
+            icon: 'Layout',
+            content: {
+              title: 'Download',
+              description: 'Seu material está pronto',
+              items: []
+            }
+          }
+        }
+      ],
+      edges: [
+        {
+          id: 'opt-delivery',
+          source: 'opt-in',
+          target: 'delivery',
+          type: 'smoothstep'
+        }
+      ]
+    }
+  ];
 
-  const handleImportTemplate = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      importTemplate(file).then(() => {
-        setTemplates(loadTemplates());
-      }).catch(() => {
-        // Error handled in hook
+  const handleLoadTemplate = async (template: Template) => {
+    if (userPlan === 'free') {
+      toast({
+        title: "Recurso Premium",
+        description: "Templates são exclusivos para usuários dos planos Mensal e Anual. Faça upgrade para acessar!",
+        variant: "destructive",
       });
+      return;
     }
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+
+    setLoading(true);
+    try {
+      onLoadTemplate(template.nodes, template.edges);
+      onClose();
+      toast({
+        title: "Template carregado",
+        description: `O template "${template.name}" foi aplicado com sucesso!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar template. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
+
+  const isPremiumFeature = userPlan === 'free';
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={handleOpen}>
-          <DialogHeader>
-            <DialogTitle>Gerenciar Templates</DialogTitle>
-            <DialogDescription>
-              Salve, carregue, importe e exporte templates do seu canvas
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Action Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              <Button 
-                onClick={() => setShowSaveDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Salvar Template
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Importar
-              </Button>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImportTemplate}
-                className="hidden"
-              />
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">Templates de Funis</h2>
+        <p className="text-gray-600">
+          Acelere a criação dos seus funis com templates profissionais
+        </p>
+        {isPremiumFeature && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-center space-x-2">
+              <Crown className="w-5 h-5 text-yellow-600" />
+              <span className="text-yellow-800 font-medium">
+                Templates são exclusivos para planos Mensal e Anual
+              </span>
             </div>
+          </div>
+        )}
+      </div>
 
-            {/* Templates List */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {templates.map((template) => (
-                <div 
-                  key={template.id}
-                  className="border rounded-lg p-4 space-y-3 hover:bg-gray-50 transition-colors"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {templates.map((template) => (
+          <Card key={template.id} className={`relative ${isPremiumFeature ? 'opacity-75' : ''}`}>
+            {isPremiumFeature && (
+              <div className="absolute top-3 right-3 z-10">
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  <Lock className="w-3 h-3 mr-1" />
+                  Premium
+                </Badge>
+              </div>
+            )}
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                {template.icon}
+                <span>{template.name}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">{template.description}</p>
+              <div className="flex justify-between items-center">
+                <Badge variant="outline">{template.category}</Badge>
+                <Button
+                  onClick={() => handleLoadTemplate(template)}
+                  disabled={loading || isPremiumFeature}
+                  size="sm"
                 >
-                  <div>
-                    <h3 className="font-medium text-sm">{template.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {template.description || 'Sem descrição'}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {template.nodes.length} nós • {template.edges.length} conexões
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        onLoadTemplate(template);
-                        onClose();
-                      }}
-                      className="flex-1 text-xs"
-                    >
-                      <FolderOpen className="w-3 h-3 mr-1" />
-                      Carregar
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => exportTemplate(template)}
-                      className="text-xs"
-                    >
-                      <Download className="w-3 h-3" />
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setTemplateToDelete(template.id)}
-                      className="text-xs text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              {templates.length === 0 && (
-                <div className="col-span-full text-center py-8 text-gray-500">
-                  <p>Nenhum template salvo ainda.</p>
-                  <p className="text-sm">Crie seu primeiro template!</p>
-                </div>
-              )}
-            </div>
-          </div>
+                  {isPremiumFeature ? (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Restrito
+                    </>
+                  ) : (
+                    'Usar Template'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Save Template Dialog */}
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Salvar Template</DialogTitle>
-            <DialogDescription>
-              Salve o estado atual do canvas como um template
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="template-name">Nome do Template</Label>
-              <Input
-                id="template-name"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="Digite o nome do template"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="template-description">Descrição (opcional)</Label>
-              <Textarea
-                id="template-description"
-                value={templateDescription}
-                onChange={(e) => setTemplateDescription(e.target.value)}
-                placeholder="Descreva o template..."
-                rows={3}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveTemplate} disabled={!templateName.trim()}>
-              Salvar Template
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover Template</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover este template? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => templateToDelete && handleDeleteTemplate(templateToDelete)}>
-              Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      {isPremiumFeature && (
+        <div className="text-center">
+          <Button
+            onClick={() => window.location.href = '/pricing'}
+            className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+          >
+            <Crown className="w-4 h-4 mr-2" />
+            Fazer Upgrade Agora
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
+
+export default TemplateManager;

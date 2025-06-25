@@ -129,6 +129,9 @@ export const useAdminDashboard = () => {
     try {
       console.log('Loading dashboard stats...');
       
+      // Sincronizar usuários existentes do auth para profiles
+      await supabase.rpc('sync_existing_users');
+      
       // Carregar todos os profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -137,7 +140,7 @@ export const useAdminDashboard = () => {
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
         setStats({
-          online_users: 0,
+          online_users: 1,
           total_users: 0,
           free_users: 0,
           monthly_users: 0,
@@ -155,12 +158,18 @@ export const useAdminDashboard = () => {
         .select('user_id')
         .gte('last_activity', new Date(Date.now() - 15 * 60 * 1000).toISOString());
 
-      const onlineUsers = sessionsError ? 0 : (sessions?.length || 0);
+      const onlineUsers = sessionsError ? 1 : Math.max((sessions?.length || 0), 1);
 
       // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
       const activeProfiles = profiles?.filter(p => {
         if (p.plan_type === 'free') return true;
-        if (p.subscription_status && p.subscription_status !== 'active') return false;
+        if (p.subscription_status && p.subscription_status !== 'active') {
+          // Se status não é ativo, verificar se não expirou ainda
+          if (p.subscription_expires_at) {
+            return new Date(p.subscription_expires_at) > new Date();
+          }
+          return false;
+        }
         if (p.subscription_expires_at) {
           return new Date(p.subscription_expires_at) > new Date();
         }
@@ -176,7 +185,7 @@ export const useAdminDashboard = () => {
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
 
       const newStats = {
-        online_users: Math.max(onlineUsers, 1), // Pelo menos 1 (admin atual)
+        online_users: onlineUsers,
         total_users: totalUsers,
         free_users: freeUsers,
         monthly_users: monthlyUsers,
@@ -201,24 +210,50 @@ export const useAdminDashboard = () => {
     try {
       console.log('Creating user with params:', { email, name, planType, subscriptionPeriod });
 
-      // Criar usuário usando a função RPC
-      const { data, error } = await supabase.rpc('create_admin_user', {
-        user_email: email,
-        user_password: password,
-        user_name: name,
-        plan_type: planType,
-        subscription_period: subscriptionPeriod
+      // Primeiro, tentar criar o usuário no auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          name: name,
+          full_name: name
+        }
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        throw authError;
       }
 
-      // Type guard para verificar se data é um objeto com a propriedade error
-      const response = data as CreateUserResponse;
+      if (!authData.user) {
+        throw new Error('Falha ao criar usuário');
+      }
 
-      if (response?.error) {
-        throw new Error(response.error);
+      // Calcular data de expiração
+      let expiresAt = null;
+      if (planType !== 'free') {
+        const now = new Date();
+        if (subscriptionPeriod === 'monthly') {
+          expiresAt = new Date(now.setMonth(now.getMonth() + 1));
+        } else if (subscriptionPeriod === 'annual') {
+          expiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
+        }
+      }
+
+      // Atualizar o perfil com as informações do plano
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: name,
+          plan_type: planType,
+          subscription_status: planType === 'free' ? 'active' : 'active',
+          subscription_expires_at: expiresAt?.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
       }
 
       toast({

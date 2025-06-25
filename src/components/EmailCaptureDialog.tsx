@@ -1,6 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -8,8 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Mail, Info } from "lucide-react";
 
 interface EmailCaptureDialogProps {
   open: boolean;
@@ -18,9 +18,9 @@ interface EmailCaptureDialogProps {
   loading?: boolean;
 }
 
-const EmailCaptureDialog = ({ open, onClose, onConfirm, loading }: EmailCaptureDialogProps) => {
+const EmailCaptureDialog = ({ open, onClose, onConfirm, loading = false }: EmailCaptureDialogProps) => {
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [error, setError] = useState("");
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,23 +28,23 @@ const EmailCaptureDialog = ({ open, onClose, onConfirm, loading }: EmailCaptureD
   };
 
   const handleConfirm = () => {
-    if (!email.trim()) {
-      setEmailError("Por favor, insira seu email");
+    if (!email) {
+      setError("Por favor, insira seu email");
       return;
     }
     
     if (!validateEmail(email)) {
-      setEmailError("Por favor, insira um email válido");
+      setError("Por favor, insira um email válido");
       return;
     }
 
-    setEmailError("");
+    setError("");
     onConfirm(email);
   };
 
   const handleClose = () => {
     setEmail("");
-    setEmailError("");
+    setError("");
     onClose();
   };
 
@@ -52,58 +52,31 @@ const EmailCaptureDialog = ({ open, onClose, onConfirm, loading }: EmailCaptureD
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-600" />
-            Confirme seu Email
-          </DialogTitle>
+          <DialogTitle>Finalizar Assinatura</DialogTitle>
           <DialogDescription>
-            Insira seu email para prosseguir com a assinatura. Você receberá o recibo por email.
+            Para continuar com sua assinatura, precisamos do seu email para criar sua conta e processar o pagamento.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
             <Input
+              id="email"
               type="email"
               placeholder="seu@email.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError("");
-              }}
-              className={emailError ? "border-red-500" : ""}
+              onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
-            {emailError && (
-              <p className="text-sm text-red-500 mt-1">{emailError}</p>
-            )}
-          </div>
-
-          {/* Informação sobre acesso */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">💡 Como acessar após a compra:</p>
-                <p>Use este mesmo email para fazer login ou criar sua conta e ter acesso automático aos benefícios premium.</p>
-              </div>
-            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
           </div>
           
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-              className="flex-1"
-            >
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={handleConfirm} disabled={loading}>
               {loading ? "Processando..." : "Continuar"}
             </Button>
           </div>

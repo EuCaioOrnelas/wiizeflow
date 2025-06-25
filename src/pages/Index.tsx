@@ -74,13 +74,7 @@ const Index = () => {
     window.location.href = '/auth';
   };
 
-  const handlePlanClick = async (priceId: string | null) => {
-    if (!priceId) {
-      // Plano gratuito - redirecionar para página de cadastro
-      window.location.href = '/auth';
-      return;
-    }
-
+  const handlePlanClick = async (priceId: string) => {
     // Verificar se usuário está logado
     const user = await getCurrentUser();
     if (user?.email) {
@@ -107,28 +101,6 @@ const Index = () => {
   };
 
   const plans = [
-    {
-      name: "Gratuito",
-      price: "R$0",
-      period: "/sempre",
-      originalPrice: null,
-      savings: null,
-      funnelLimit: 2,
-      features: [
-        "Até 2 funis",
-        "Editor visual básico",
-        "Exportar como imagem/PDF",
-        "Suporte por email"
-      ],
-      restrictions: [
-        "Sem acesso aos templates",
-        "Funcionalidades limitadas"
-      ],
-      buttonText: "Começar Grátis",
-      popular: false,
-      color: "gray",
-      priceId: null
-    },
     {
       name: "Mensal",
       price: "R$47",
@@ -539,7 +511,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {plans.map((plan, index) => (
               <Card key={index} className={`${getCardStyle(plan)} hover:shadow-2xl transition-all duration-200`}>
                 {plan.popular && (
@@ -571,7 +543,7 @@ const Index = () => {
                   )}
                   
                   <p className="text-gray-600 font-medium">
-                    {typeof plan.funnelLimit === 'number' ? `Até ${plan.funnelLimit} funis` : plan.funnelLimit + ' funis'}
+                    {plan.funnelLimit} funis
                   </p>
                 </CardHeader>
 
@@ -581,12 +553,6 @@ const Index = () => {
                       <li key={featureIndex} className="flex items-start">
                         <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
                         <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                    {plan.restrictions.map((restriction, restrictionIndex) => (
-                      <li key={restrictionIndex} className="flex items-start">
-                        <span className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0 text-red-500 font-bold">✗</span>
-                        <span className="text-gray-500">{restriction}</span>
                       </li>
                     ))}
                   </ul>
@@ -603,6 +569,7 @@ const Index = () => {
             ))}
           </div>
 
+          {/* Nova seção explicativa sobre acesso */}
           <div className="text-center mt-12">
             <div className="bg-blue-50 p-6 rounded-lg max-w-2xl mx-auto mb-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
@@ -613,7 +580,6 @@ const Index = () => {
               </p>
             </div>
 
-            {/* Nova seção explicativa sobre acesso */}
             <div className="bg-green-50 p-6 rounded-lg max-w-3xl mx-auto border border-green-200">
               <h3 className="text-lg font-semibold text-green-800 mb-3">
                 📧 Como Acessar Após a Compra

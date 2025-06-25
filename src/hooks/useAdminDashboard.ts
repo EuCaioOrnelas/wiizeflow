@@ -35,6 +35,7 @@ export const useAdminDashboard = () => {
     if (isAdmin) {
       loadDashboardStats();
       checkExpiredSubscriptions();
+      syncExistingUsers();
       // Refresh stats every 30 seconds
       const interval = setInterval(() => {
         loadDashboardStats();
@@ -110,6 +111,21 @@ export const useAdminDashboard = () => {
     }
   };
 
+  const syncExistingUsers = async () => {
+    try {
+      console.log('Syncing existing users...');
+      const { data, error } = await supabase.rpc('sync_existing_users');
+      
+      if (error) {
+        console.error('Error syncing existing users:', error);
+      } else if (data > 0) {
+        console.log(`Synced ${data} existing users to profiles table`);
+      }
+    } catch (error) {
+      console.error('Error syncing existing users:', error);
+    }
+  };
+
   const checkExpiredSubscriptions = async () => {
     try {
       console.log('Checking expired subscriptions...');
@@ -127,23 +143,24 @@ export const useAdminDashboard = () => {
 
   const loadDashboardStats = async () => {
     try {
-      // Buscar todos os perfis
+      console.log('Loading dashboard stats...');
+
+      // Buscar todos os perfis com informações atualizadas
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('plan_type, subscription_status, subscription_expires_at, created_at');
+        .select('id, plan_type, subscription_status, subscription_expires_at, created_at');
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
-        setStats({
-          online_users: 0,
-          total_users: 0,
-          free_users: 0,
-          monthly_users: 0,
-          annual_users: 0,
-          projected_monthly_revenue: 0,
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados dos usuários.",
+          variant: "destructive",
         });
         return;
       }
+
+      console.log('Profiles loaded:', profiles?.length || 0);
 
       // Buscar sessões ativas (últimos 15 minutos)
       const { data: activeSessions, error: sessionsError } = await supabase
@@ -151,36 +168,42 @@ export const useAdminDashboard = () => {
         .select('user_id')
         .gt('last_activity', new Date(Date.now() - 15 * 60 * 1000).toISOString());
 
-      const onlineUsers = activeSessions?.length || 0;
+      if (sessionsError) {
+        console.error('Error loading sessions:', sessionsError);
+      }
 
+      const onlineUsers = activeSessions?.length || 0;
       const allProfiles = profiles || [];
       const totalUsers = allProfiles.length;
 
-      // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
+      // Filtrar usuários por plano, considerando apenas assinaturas ativas
       const activeProfiles = allProfiles.filter(p => {
         if (p.plan_type === 'free') return true;
         if (p.subscription_status !== 'active') return false;
         if (p.subscription_expires_at) {
           return new Date(p.subscription_expires_at) > new Date();
         }
-        return true;
+        return p.subscription_status === 'active';
       });
 
       const freeUsers = activeProfiles.filter(p => p.plan_type === 'free').length;
       const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
       const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
       
-      // Valores: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
+      // Calcular receita projetada (R$ 47,00 mensal e R$ 397,00 anual)
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
 
-      setStats({
+      const statsData = {
         online_users: onlineUsers,
         total_users: totalUsers,
         free_users: freeUsers,
         monthly_users: monthlyUsers,
         annual_users: annualUsers,
         projected_monthly_revenue: projectedRevenue,
-      });
+      };
+
+      console.log('Dashboard stats calculated:', statsData);
+      setStats(statsData);
 
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -206,7 +229,6 @@ export const useAdminDashboard = () => {
         throw error;
       }
 
-      // Type guard para verificar se data é um objeto com a propriedade error
       const response = data as CreateUserResponse;
 
       if (response?.error) {

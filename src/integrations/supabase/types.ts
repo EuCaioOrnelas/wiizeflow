@@ -253,6 +253,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       admin_role: "super_admin" | "admin" | "moderator"

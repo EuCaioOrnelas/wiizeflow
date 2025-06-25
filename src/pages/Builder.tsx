@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ const Builder = () => {
         return;
       }
 
+      // Atualizar estado local
       setFunnel(prev => prev ? { ...prev, name: newName } : null);
 
     } catch (error) {
@@ -187,20 +189,17 @@ const Builder = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Back button - positioned in top navigation area to avoid overlap */}
-      <div className="absolute top-2 left-2 z-50">
-        <Button 
-          variant="ghost" 
-          onClick={goBack} 
-          className="bg-white dark:bg-gray-800 shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700"
-          disabled={saving}
-          size="sm"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          {saving ? 'Salvando...' : 'Voltar'}
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Back button - positioned absolutely to not interfere with canvas */}
+      <Button 
+        variant="ghost" 
+        onClick={goBack} 
+        className="absolute top-4 left-4 z-50 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg"
+        disabled={saving}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        {saving ? 'Salvando...' : 'Voltar'}
+      </Button>
 
       <InfiniteCanvas
         funnelId={funnel.id}

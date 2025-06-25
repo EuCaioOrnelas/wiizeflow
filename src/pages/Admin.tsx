@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -89,11 +88,7 @@ const Admin = () => {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <img 
-                src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
-                alt="WiizeFlow Logo" 
-                className="w-8 h-8"
-              />
+              <Target className="w-8 h-8 text-green-600" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">WiizeFlow</span>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -149,7 +144,7 @@ const Admin = () => {
                 {stats?.online_users || 0}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Ativos nas últimas 24 horas
+                Ativos nos últimos 15 minutos
               </p>
             </CardContent>
           </Card>

@@ -1,103 +1,91 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  FileText, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  LogOut, 
-  User, 
-  Crown,
-  CreditCard,
-  Settings,
-  Target
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Target, LogOut, Edit3, User, CreditCard, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { useNavigate } from "react-router-dom";
 import { DeleteFunnelDialog } from "@/components/DeleteFunnelDialog";
 
 interface Funnel {
   id: string;
   name: string;
+  canvas_data: any;
   created_at: string;
   updated_at: string;
 }
 
 const Dashboard = () => {
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userPlan, setUserPlan] = useState<string>('free');
-  const [userName, setUserName] = useState<string>('');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [creatingFunnel, setCreatingFunnel] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const MAX_FUNNELS_FREE = 3;
-
   useEffect(() => {
-    loadUserData();
-    loadFunnels();
-  }, []);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          navigate('/auth');
+        } else {
+          loadUserData(session.user.id);
+        }
+      }
+    );
 
-  const loadUserData = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       
       if (!session?.user) {
         navigate('/auth');
-        return;
+      } else {
+        loadUserData(session.user.id);
       }
+      setLoading(false);
+    });
 
-      // Carregar dados do perfil do usuário
-      const { data: profileData, error } = await supabase
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const loadUserData = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('name, plan_type')
-        .eq('id', session.user.id)
+        .select('*')
+        .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error('Error loading profile:', error);
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar perfil do usuário.",
+          variant: "destructive",
+        });
         return;
       }
 
-      setUserName(profileData.name || 'Usuário');
-      setUserPlan(profileData.plan_type || 'free');
-      
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
+      setProfile(profileData);
 
-  const loadFunnels = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: funnelsData, error } = await supabase
+      const { data: funnelsData, error: funnelsError } = await supabase
         .from('funnels')
-        .select('id, name, created_at, updated_at')
-        .eq('user_id', session.user.id)
-        .order('updated_at', { ascending: false });
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading funnels:', error);
+      if (funnelsError) {
+        console.error('Error loading funnels:', funnelsError);
         toast({
           title: "Erro",
           description: "Erro ao carregar funis.",
@@ -107,37 +95,45 @@ const Dashboard = () => {
       }
 
       setFunnels(funnelsData || []);
+
     } catch (error) {
-      console.error('Error loading funnels:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading user data:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do usuário.",
+        variant: "destructive",
+      });
     }
   };
 
-  const createFunnel = async () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const createNewFunnel = async () => {
+    if (!user || !profile) return;
+
+    const funnelLimit = profile.plan_type === 'free' ? 2 : 'unlimited';
+    const isLimitReached = funnelLimit === 2 && funnels.length >= 2;
+    
+    if (isLimitReached) {
+      toast({
+        title: "Limite atingido",
+        description: "Você atingiu o limite do seu plano gratuito. Faça upgrade para continuar criando funis.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingFunnel(true);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        navigate('/auth');
-        return;
-      }
-
-      // Verificar limite de funis para usuários gratuitos
-      if (userPlan === 'free' && funnels.length >= MAX_FUNNELS_FREE) {
-        toast({
-          title: "Limite atingido",
-          description: `Usuários do plano gratuito podem criar até ${MAX_FUNNELS_FREE} funis. Faça upgrade para criar mais.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { data: newFunnel, error } = await supabase
         .from('funnels')
         .insert({
-          name: `Novo Funil ${funnels.length + 1}`,
-          user_id: session.user.id,
+          user_id: user.id,
+          name: `Funil ${funnels.length + 1}`,
           canvas_data: { nodes: [], edges: [] }
         })
         .select()
@@ -147,61 +143,75 @@ const Dashboard = () => {
         console.error('Error creating funnel:', error);
         toast({
           title: "Erro",
-          description: "Erro ao criar funil.",
+          description: "Erro ao criar novo funil.",
           variant: "destructive",
         });
         return;
       }
 
+      setFunnels(prev => [newFunnel, ...prev]);
+
       toast({
-        title: "Funil criado!",
-        description: "Seu novo funil foi criado com sucesso.",
+        title: "Sucesso!",
+        description: "Novo funil criado com sucesso.",
       });
 
-      // Navegar para o editor do funil criado
       navigate(`/builder/${newFunnel.id}`);
-      
+
     } catch (error) {
       console.error('Error creating funnel:', error);
       toast({
-        title: "Erro inesperado",
+        title: "Erro",
         description: "Erro inesperado ao criar funil.",
         variant: "destructive",
       });
+    } finally {
+      setCreatingFunnel(false);
     }
   };
 
-  const deleteFunnel = async (funnelId: string) => {
+  const handleDeleteFunnel = (funnel: Funnel) => {
+    setFunnelToDelete(funnel);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteFunnel = async () => {
+    if (!funnelToDelete || !user) return;
+
     setIsDeleting(true);
+
     try {
       const { error } = await supabase
         .from('funnels')
         .delete()
-        .eq('id', funnelId);
+        .eq('id', funnelToDelete.id)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error deleting funnel:', error);
         toast({
           title: "Erro",
-          description: "Erro ao deletar funil.",
+          description: "Erro ao excluir funil.",
           variant: "destructive",
         });
         return;
       }
 
+      setFunnels(prev => prev.filter(f => f.id !== funnelToDelete.id));
+
       toast({
-        title: "Funil deletado!",
-        description: "O funil foi deletado com sucesso.",
+        title: "Funil excluído!",
+        description: `O funil "${funnelToDelete.name}" foi excluído permanentemente.`,
       });
 
-      // Recarregar lista de funis
-      loadFunnels();
-      
+      setDeleteDialogOpen(false);
+      setFunnelToDelete(null);
+
     } catch (error) {
       console.error('Error deleting funnel:', error);
       toast({
-        title: "Erro inesperado",
-        description: "Erro inesperado ao deletar funil.",
+        title: "Erro",
+        description: "Erro inesperado ao excluir funil.",
         variant: "destructive",
       });
     } finally {
@@ -209,221 +219,268 @@ const Dashboard = () => {
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getPlanBadge = () => {
-    switch (userPlan) {
-      case 'monthly':
-        return <Badge className="bg-blue-100 text-blue-800">Mensal</Badge>;
-      case 'annual':
-        return <Badge className="bg-yellow-100 text-yellow-800">Anual</Badge>;
-      default:
-        return <Badge variant="secondary">Gratuito</Badge>;
-    }
+  const openFunnel = (funnelId: string) => {
+    navigate(`/builder/${funnelId}`);
   };
 
   const handleUpgrade = () => {
-    navigate('/pricing');
+    window.location.href = '/#pricing-section';
+  };
+
+  const handleAccount = () => {
+    navigate('/account');
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'free': return 'text-gray-600 bg-gray-100';
+      case 'monthly': return 'text-blue-600 bg-blue-100';
+      case 'annual': return 'text-green-600 bg-green-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getPlanName = (plan: string) => {
+    switch (plan) {
+      case 'free': return 'Gratuito';
+      case 'monthly': return 'Mensal';
+      case 'annual': return 'Anual';
+      default: return 'Gratuito';
+    }
+  };
+
+  const getFunnelLimit = () => {
+    return profile?.plan_type === 'free' ? 2 : 'Ilimitados';
+  };
+
+  const getRemainingFunnels = () => {
+    if (profile?.plan_type !== 'free') {
+      return "∞";
+    }
+    return Math.max(0, 2 - funnels.length);
+  };
+
+  const getProgressPercentage = () => {
+    if (profile?.plan_type !== 'free') {
+      return 0;
+    }
+    return (funnels.length / 2) * 100;
+  };
+
+  const isAtLimit = () => {
+    return profile?.plan_type === 'free' && funnels.length >= 2;
+  };
+
+  const hasTemplateAccess = () => {
+    return profile?.plan_type !== 'free';
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Target className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600 dark:text-gray-400">Carregando dashboard...</p>
-        </div>
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <Target className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
+        <p className="text-gray-600">Carregando...</p>
       </div>
-    );
+    </div>;
+  }
+
+  if (!user || !profile) {
+    return <div>Carregando...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <header className="bg-white border-b transition-colors duration-300">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <img 
-                src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
-                alt="WiizeFlow Logo" 
-                className="w-8 h-8"
-              />
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">WiizeFlow</span>
-            </div>
-            {getPlanBadge()}
+          <div className="flex items-center space-x-2">
+            <Target className="w-8 h-8 text-green-600" />
+            <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Olá, {userName}!
-            </span>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Conta
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/account')}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configurações
-                </DropdownMenuItem>
-                {userPlan === 'free' && (
-                  <DropdownMenuItem onClick={handleUpgrade}>
-                    <Crown className="w-4 h-4 mr-2" />
-                    Fazer Upgrade
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => navigate('/pricing')}>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Ver Planos
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${getPlanColor(profile.plan_type)}`}>
+              Plano {getPlanName(profile.plan_type)}
+            </div>
+            <span className="text-gray-600">Olá, {profile.name || user.email}!</span>
+            <Button variant="outline" onClick={handleAccount} size="sm">
+              <User className="w-4 h-4 mr-2" />
+              Conta
+            </Button>
+            <Button variant="outline" onClick={handleLogout} size="sm">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Usage Stats - 3 cards layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">Funis Criados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold">{funnels.length}</span>
+                <span className="text-sm text-gray-500">de {getFunnelLimit()}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full" 
+                  style={{ width: `${getProgressPercentage()}%` }}
+                ></div>
+              </div>
+              {isAtLimit() && (
+                <p className="text-xs text-orange-600 mt-2">Limite atingido</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">Plano Atual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-bold">{getPlanName(profile.plan_type)}</span>
+                <Button onClick={handleUpgrade} size="sm" variant="outline">
+                  <CreditCard className="w-4 h-4 mr-1" />
+                  Upgrade
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-600">Templates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <span className="text-xl font-bold">
+                {hasTemplateAccess() ? 'Disponível' : 'Bloqueado'}
+              </span>
+              <p className="text-xs text-gray-500 mt-1">
+                {hasTemplateAccess() ? 'Acesso completo' : 'Upgrade para usar'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Meus Funis
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              {userPlan === 'free' 
-                ? `${funnels.length}/${MAX_FUNNELS_FREE} funis criados (plano gratuito)`
-                : `${funnels.length} funis criados`
-              }
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Meus Funis</h1>
+            <p className="text-gray-600">Crie e gerencie seus funis de vendas</p>
           </div>
           
           <Button 
-            onClick={createFunnel}
-            className="bg-green-600 hover:bg-green-700"
-            disabled={userPlan === 'free' && funnels.length >= MAX_FUNNELS_FREE}
+            onClick={createNewFunnel} 
+            className={`${isAtLimit() ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+            disabled={isAtLimit() || creatingFunnel}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Funil
+            <Plus className="w-5 h-5 mr-2" />
+            {creatingFunnel ? 'Criando...' : 'Novo Funil'}
           </Button>
         </div>
 
-        {/* Upgrade Notice */}
-        {userPlan === 'free' && funnels.length >= MAX_FUNNELS_FREE && (
-          <Card className="mb-8 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="flex items-center space-x-3">
-                <Crown className="w-6 h-6 text-yellow-600" />
-                <div>
-                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">
-                    Limite de funis atingido
-                  </h3>
-                  <p className="text-yellow-700 dark:text-yellow-300">
-                    Faça upgrade para criar funis ilimitados e desbloquear recursos avançados.
-                  </p>
-                </div>
+        {profile.plan_type === 'free' && (
+          <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white p-6 rounded-lg mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2">🚀 Desbloqueie todo o potencial</h3>
+                <p className="mb-2">Com os planos pagos você tem:</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Funis ilimitados</li>
+                  <li>• Acesso a todos os templates</li>
+                  <li>• Suporte prioritário</li>
+                  <li>• Análises detalhadas</li>
+                </ul>
               </div>
-              <Button onClick={handleUpgrade} className="bg-yellow-600 hover:bg-yellow-700">
-                Ver Planos
-              </Button>
-            </CardContent>
-          </Card>
+              <div className="text-center">
+                <div className="bg-white/20 p-4 rounded-lg mb-3">
+                  <div className="text-2xl font-bold">R$ 47</div>
+                  <div className="text-sm">por mês</div>
+                </div>
+                <Button onClick={handleUpgrade} variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
+                  Ver Planos
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Funnels Grid */}
-        {funnels.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Nenhum funil criado ainda
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Crie seu primeiro funil para começar a visualizar suas estratégias de marketing.
-              </p>
-              <Button 
-                onClick={createFunnel}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Funil
+        {isAtLimit() && (
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-lg mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2">Limite de funis atingido!</h3>
+                <p>Você atingiu o limite do plano {getPlanName(profile.plan_type)}. Faça upgrade para continuar criando funis!</p>
+              </div>
+              <Button onClick={handleUpgrade} variant="secondary">
+                Fazer Upgrade
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        )}
+
+        {funnels.length === 0 ? (
+          <div className="text-center py-16">
+            <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              Nenhum funil criado ainda
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Comece criando seu primeiro funil de vendas
+            </p>
+            <Button 
+              onClick={createNewFunnel} 
+              className="bg-green-600 hover:bg-green-700"
+              disabled={creatingFunnel}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {creatingFunnel ? 'Criando...' : 'Criar Primeiro Funil'}
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {funnels.map((funnel) => (
-              <Card key={funnel.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={() => navigate(`/builder/${funnel.id}`)}
-                  >
-                    <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
-                      {funnel.name}
-                    </CardTitle>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Atualizado em {formatDate(funnel.updated_at)}
-                    </p>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/builder/${funnel.id}`)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => {
-                          setFunnelToDelete(funnel);
-                          setIsDeleteDialogOpen(true);
+              <Card key={funnel.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{funnel.name}</span>
+                    <div className="flex items-center space-x-2">
+                      <Edit3 className="w-4 h-4 text-gray-400" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFunnel(funnel);
                         }}
-                        className="text-red-600"
+                        className="p-1 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardTitle>
                 </CardHeader>
-                
-                <CardContent 
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/builder/${funnel.id}`)}
-                >
-                  <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Clique para editar
-                    </p>
-                  </div>
+                <CardContent>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Criado em {new Date(funnel.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                  <p className="text-gray-500 text-sm mb-4">
+                    {funnel.canvas_data?.nodes?.length || 0} blocos
+                  </p>
+                  <Button 
+                    onClick={() => openFunnel(funnel.id)}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                  >
+                    Abrir Funil
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -433,18 +490,12 @@ const Dashboard = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteFunnelDialog
-        isOpen={isDeleteDialogOpen}
+        isOpen={deleteDialogOpen}
         onClose={() => {
-          setIsDeleteDialogOpen(false);
+          setDeleteDialogOpen(false);
           setFunnelToDelete(null);
         }}
-        onConfirm={() => {
-          if (funnelToDelete) {
-            deleteFunnel(funnelToDelete.id);
-            setIsDeleteDialogOpen(false);
-            setFunnelToDelete(null);
-          }
-        }}
+        onConfirm={confirmDeleteFunnel}
         funnelName={funnelToDelete?.name || ''}
         isDeleting={isDeleting}
       />

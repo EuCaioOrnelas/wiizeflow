@@ -1,112 +1,154 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Crown, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Target, Eye, EyeOff, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { User, Session } from '@supabase/supabase-js';
 
 const AdminAuth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se já está logado como admin
-    const checkAdminAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Configurar listener de mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Verificar se o usuário é admin pelo email
+          if (session.user.email === 'adminwiize@wiizeflow.com.br') {
+            console.log('Admin user logged in, redirecting to admin dashboard');
+            navigate('/admin');
+            return;
+          }
+
+          // Tentar verificar se o usuário é admin na tabela
+          try {
+            const { data: adminCheck } = await supabase
+              .from('admin_users')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+            if (adminCheck) {
+              navigate('/admin');
+            } else {
+              // Usuário não é admin, fazer logout
+              await supabase.auth.signOut();
+              toast({
+                title: "Acesso Negado",
+                description: "Apenas administradores podem acessar esta área.",
+                variant: "destructive",
+              });
+            }
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            
+            // Se houver erro mas é o email admin, permitir acesso
+            if (session.user.email === 'adminwiize@wiizeflow.com.br') {
+              navigate('/admin');
+            } else {
+              await supabase.auth.signOut();
+              toast({
+                title: "Erro",
+                description: "Erro ao verificar permissões de administrador.",
+                variant: "destructive",
+              });
+            }
+          }
+        }
+      }
+    );
+
+    // Verificar sessão existente
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Existing session:', session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Verificar se é o email admin específico
+        // Verificar se o usuário é admin pelo email primeiro
         if (session.user.email === 'adminwiize@wiizeflow.com.br') {
           navigate('/admin');
           return;
         }
-        
-        // Verificar se está na tabela admin_users
-        const { data: adminCheck } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        if (adminCheck) {
-          navigate('/admin');
+
+        try {
+          const { data: adminCheck } = await supabase
+            .from('admin_users')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (adminCheck) {
+            navigate('/admin');
+          } else {
+            await supabase.auth.signOut();
+          }
+        } catch (error) {
+          console.error('Error checking existing session admin status:', error);
+          if (session.user.email !== 'adminwiize@wiizeflow.com.br') {
+            await supabase.auth.signOut();
+          }
         }
       }
-    };
-    
-    checkAdminAuth();
-  }, [navigate]);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Admin login attempt for:', email);
+      console.log('Attempting login with email:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('Login result:', data, error);
+
       if (error) {
-        console.error('Admin login error:', error);
-        toast({
-          title: "Erro de Login",
-          description: "Credenciais inválidas ou você não tem permissão de administrador.",
-          variant: "destructive",
-        });
+        console.error('Login error:', error);
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Erro de Login",
+            description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro de Login",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
         return;
       }
 
-      if (data.user) {
-        console.log('Admin login successful for:', data.user.email);
-        
-        // Verificar se é admin
-        if (data.user.email === 'adminwiize@wiizeflow.com.br') {
-          toast({
-            title: "Login realizado!",
-            description: "Redirecionando para o painel administrativo...",
-          });
-          navigate('/admin');
-          return;
-        }
-        
-        // Verificar se está na tabela admin_users
-        const { data: adminCheck, error: adminError } = await supabase
-          .from('admin_users')
-          .select('id, role')
-          .eq('user_id', data.user.id)
-          .single();
-          
-        if (adminError || !adminCheck) {
-          console.log('User is not an admin');
-          await supabase.auth.signOut();
-          toast({
-            title: "Acesso Negado",
-            description: "Você não tem permissão para acessar o painel administrativo.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        toast({
-          title: "Login realizado!",
-          description: "Redirecionando para o painel administrativo...",
-        });
-        navigate('/admin');
-      }
+      console.log('Login successful for:', data.user?.email);
+      
+      // A verificação de admin será feita no useEffect através do onAuthStateChange
       
     } catch (error: any) {
-      console.error('Unexpected admin login error:', error);
+      console.error('Unexpected login error:', error);
       toast({
         title: "Erro inesperado",
         description: "Ocorreu um erro inesperado. Tente novamente.",
@@ -118,37 +160,36 @@ const AdminAuth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <img 
-              src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
-              alt="WiizeFlow Logo" 
-              className="w-10 h-10"
-            />
-            <Crown className="w-8 h-8 text-orange-600" />
+            <div className="relative">
+              <Target className="w-10 h-10 text-green-600" />
+              <Shield className="w-5 h-5 text-yellow-500 absolute -top-1 -right-1" />
+            </div>
+            <span className="text-3xl font-bold text-white">WiizeFlow</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Painel Administrativo
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Acesso Administrativo
           </h1>
-          <p className="text-gray-600">
-            Acesso restrito para administradores
+          <p className="text-gray-400">
+            Área restrita para administradores
           </p>
         </div>
 
-        <Card className="shadow-xl border-orange-200">
-          <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-lg">
-            <CardTitle className="text-center flex items-center justify-center space-x-2">
-              <Crown className="w-5 h-5" />
-              <span>Login Administrativo</span>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-center text-white flex items-center justify-center space-x-2">
+              <Shield className="w-5 h-5 text-yellow-500" />
+              <span>Login de Administrador</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email do Administrador</Label>
+                <Label htmlFor="email" className="text-gray-300">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -156,11 +197,12 @@ const AdminAuth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password" className="text-gray-300">Senha</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -169,6 +211,7 @@ const AdminAuth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                   />
                   <Button
                     type="button"
@@ -188,29 +231,28 @@ const AdminAuth = () => {
               
               <Button 
                 type="submit" 
-                className="w-full bg-orange-600 hover:bg-orange-700"
+                className="w-full bg-green-600 hover:bg-green-700"
                 disabled={loading}
               >
-                {loading ? 'Verificando...' : 'Acessar Painel Admin'}
+                {loading ? 'Verificando...' : 'Entrar como Admin'}
               </Button>
             </form>
             
             <div className="text-center mt-6">
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={() => navigate('/')}
-                className="text-sm"
+                className="text-gray-400 hover:text-gray-300 text-sm"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao Site
-              </Button>
+                Voltar para página inicial
+              </button>
             </div>
           </CardContent>
         </Card>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
-            Este painel é restrito apenas para administradores autorizados.
+            Apenas usuários com privilégios administrativos podem acessar esta área
           </p>
         </div>
       </div>

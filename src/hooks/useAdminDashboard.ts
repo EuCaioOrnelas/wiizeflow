@@ -127,22 +127,12 @@ export const useAdminDashboard = () => {
 
   const loadDashboardStats = async () => {
     try {
-      console.log('Loading dashboard stats...');
-      
-      // Carregar todos os perfis diretamente
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, plan_type, subscription_status, subscription_expires_at, created_at');
+        .select('plan_type, subscription_status, subscription_expires_at');
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
-        return;
-      }
-
-      console.log('Loaded profiles:', profiles?.length, 'profiles');
-
-      if (!profiles) {
-        console.log('No profiles found');
         setStats({
           online_users: 0,
           total_users: 0,
@@ -154,43 +144,26 @@ export const useAdminDashboard = () => {
         return;
       }
 
-      // Calcular usuários online (simulação - considerar usuários criados nas últimas 24h como ativos)
-      const now = new Date();
-      const onlineUsers = profiles.filter(p => {
-        const created = new Date(p.created_at);
-        const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
-        return diffHours <= 24;
-      }).length;
-
       // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
-      const activeProfiles = profiles.filter(p => {
+      const activeProfiles = profiles?.filter(p => {
         if (p.plan_type === 'free') return true;
-        if (p.subscription_status !== 'active' && p.subscription_status !== 'pending_activation') return false;
+        if (p.subscription_status !== 'active') return false;
         if (p.subscription_expires_at) {
-          return new Date(p.subscription_expires_at) > now;
+          return new Date(p.subscription_expires_at) > new Date();
         }
         return true;
-      });
+      }) || [];
 
-      const totalUsers = profiles.length;
-      const freeUsers = profiles.filter(p => p.plan_type === 'free').length;
+      const totalUsers = profiles?.length || 0;
+      const freeUsers = activeProfiles.filter(p => p.plan_type === 'free').length;
       const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
       const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
       
       // Novos valores: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
 
-      console.log('Calculated stats:', {
-        totalUsers,
-        freeUsers,
-        monthlyUsers,
-        annualUsers,
-        projectedRevenue,
-        onlineUsers
-      });
-
       setStats({
-        online_users: onlineUsers,
+        online_users: 1,
         total_users: totalUsers,
         free_users: freeUsers,
         monthly_users: monthlyUsers,

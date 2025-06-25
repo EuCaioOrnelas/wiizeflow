@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { CustomNodeData, NodeContent } from '@/types/canvas';
@@ -62,8 +61,6 @@ export const useCanvasOperations = ({
         return 'Google meu negócio';
       case 'text':
         return 'Anotação';
-      case 'freetext':
-        return 'Clique para editar texto...';
       case 'wait':
         return 'Tempo de espera';
       case 'other':
@@ -76,7 +73,7 @@ export const useCanvasOperations = ({
   const addNode = useCallback((type: string, position: { x: number; y: number }) => {
     const newNode: Node<CustomNodeData> = {
       id: `node-${Date.now()}`,
-      type: type === 'freetext' ? 'freetext' : 'custom',
+      type: 'custom',
       position,
       data: {
         label: getNodeLabel(type),
@@ -183,7 +180,7 @@ export const useCanvasOperations = ({
             data: { 
               ...node.data, 
               content,
-              hasContent: !!(content && Object.keys(content).length > 0 && (content.title || content.description || (content.items && content.items.length > 0))),
+              hasContent: !!content && Object.keys(content).length > 0,
               ...(elementName && { label: elementName })
             }
           }
@@ -192,14 +189,6 @@ export const useCanvasOperations = ({
     saveToHistory();
   }, [nodes, setNodes, saveToHistory]);
 
-  const updateAllEdgesType = useCallback((newType: string) => {
-    setEdges(edges.map(edge => ({
-      ...edge,
-      type: newType
-    })));
-    saveToHistory();
-  }, [edges, setEdges, saveToHistory]);
-
   return {
     addNode,
     duplicateNode,
@@ -207,7 +196,6 @@ export const useCanvasOperations = ({
     copyNodes,
     pasteNodes,
     deleteSelected,
-    updateNodeContent,
-    updateAllEdgesType
+    updateNodeContent
   };
 };

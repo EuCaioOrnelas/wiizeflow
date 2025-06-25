@@ -75,6 +75,14 @@ const Index = () => {
   };
 
   const handlePlanClick = async (priceId: string) => {
+    console.log('Plan clicked with priceId:', priceId);
+    
+    // Para plano gratuito, redireciona direto para registro/login
+    if (priceId === "free") {
+      handleGetStarted();
+      return;
+    }
+    
     // Verificar se usuário está logado
     const user = await getCurrentUser();
     if (user?.email) {
@@ -101,6 +109,30 @@ const Index = () => {
   };
 
   const plans = [
+    {
+      name: "Gratuito",
+      price: "R$0",
+      period: "/sempre",
+      originalPrice: null,
+      savings: null,
+      funnelLimit: "Até 2 funis",
+      features: [
+        "Até 2 funis",
+        "Templates básicos",
+        "Editor visual simples",
+        "Exportar como imagem",
+        "Suporte por email"
+      ],
+      restrictions: [
+        "Limitado a 2 funis",
+        "Marca d'água nos exports",
+        "Sem análises avançadas"
+      ],
+      buttonText: "Começar Grátis",
+      popular: false,
+      color: "gray",
+      priceId: "free"
+    },
     {
       name: "Mensal",
       price: "R$47",
@@ -238,6 +270,8 @@ const Index = () => {
         return 'bg-green-600 hover:bg-green-700 text-white';
       case 'blue':
         return 'bg-blue-600 hover:bg-blue-700 text-white';
+      case 'gray':
+        return 'bg-gray-600 hover:bg-gray-700 text-white';
       default:
         return 'bg-gray-600 hover:bg-gray-700 text-white';
     }
@@ -511,7 +545,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <Card key={index} className={`${getCardStyle(plan)} hover:shadow-2xl transition-all duration-200`}>
                 {plan.popular && (
@@ -543,7 +577,7 @@ const Index = () => {
                   )}
                   
                   <p className="text-gray-600 font-medium">
-                    {plan.funnelLimit} funis
+                    {plan.funnelLimit}
                   </p>
                 </CardHeader>
 
@@ -559,7 +593,7 @@ const Index = () => {
 
                   <Button 
                     onClick={() => handlePlanClick(plan.priceId)}
-                    disabled={loading}
+                    disabled={loading && plan.priceId === selectedPriceId}
                     className={`w-full py-3 text-lg font-medium ${getButtonStyle(plan)} shadow-lg hover:shadow-xl transition-all`}
                   >
                     {loading && plan.priceId === selectedPriceId ? "Processando..." : plan.buttonText}

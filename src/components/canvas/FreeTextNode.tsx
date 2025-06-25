@@ -4,7 +4,7 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit3 } from 'lucide-react';
+import { Edit3, Check, X } from 'lucide-react';
 
 interface FreeTextNodeProps extends NodeProps {
   data: CustomNodeData;
@@ -14,6 +14,7 @@ interface FreeTextNodeProps extends NodeProps {
 export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeTextNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(data.label || 'Clique para editar texto...');
+  const [originalText, setOriginalText] = useState(data.label || 'Clique para editar texto...');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -26,18 +27,28 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    setOriginalText(data.label || 'Clique para editar texto...');
+    setText(data.label || 'Clique para editar texto...');
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (onUpdateNode && text.trim()) {
       onUpdateNode(id, { label: text.trim() });
     }
     setIsEditing(false);
   };
 
-  const handleCancel = () => {
-    setText(data.label || 'Clique para editar texto...');
+  const handleCancel = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setText(originalText);
     setIsEditing(false);
   };
 
@@ -128,13 +139,32 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
               onChange={(e) => setText(e.target.value.slice(0, 500))}
               onKeyDown={handleKeyDown}
               onClick={handleTextareaClick}
-              onBlur={handleSave}
               maxLength={500}
               className="min-w-[200px] min-h-[60px] max-w-[400px] resize-none border-2 border-blue-500 bg-white text-gray-800 text-sm p-2 rounded focus:outline-none focus:ring-0"
               placeholder="Digite seu texto aqui..."
             />
             <div className="absolute bottom-1 right-1 text-xs text-gray-400">
               {text.length}/500
+            </div>
+            <div className="flex gap-1 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2"
+                onClick={handleSave}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Salvar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2"
+                onClick={handleCancel}
+              >
+                <X className="w-3 h-3 mr-1" />
+                Cancelar
+              </Button>
             </div>
           </div>
         ) : (

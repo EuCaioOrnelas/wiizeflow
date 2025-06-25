@@ -1,20 +1,24 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, useStore } from '@xyflow/react';
-import { Settings, X, Check } from 'lucide-react';
+import { Settings, X, Check, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmojiGallery } from './EmojiGallery';
+import { ContentEditor } from './ContentEditor';
 import { CustomNodeData } from '@/types/canvas';
 
 interface CustomNodeProps {
   id: string;
   data: CustomNodeData;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
+  onUpdateContent?: (nodeId: string, content: any) => void;
 }
 
-export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
+export const CustomNode = ({ id, data, onUpdateNode, onUpdateContent }: CustomNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isContentEditorOpen, setIsContentEditorOpen] = useState(false);
   const [isEmojiGalleryOpen, setIsEmojiGalleryOpen] = useState(false);
   const [tempLabel, setTempLabel] = useState(data.label);
   const [tempIcon, setTempIcon] = useState(data.customIcon || '📝');
@@ -94,6 +98,16 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
     setIsEmojiGalleryOpen(false);
   }, []);
 
+  const handleContentSave = useCallback((content: any, elementName?: string) => {
+    if (onUpdateContent) {
+      onUpdateContent(id, content);
+    }
+    if (elementName && onUpdateNode) {
+      onUpdateNode(id, { label: elementName });
+    }
+    setIsContentEditorOpen(false);
+  }, [id, onUpdateContent, onUpdateNode]);
+
   const colorOptions = [
     '#6B7280', '#EF4444', '#F97316', '#EAB308', 
     '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899'
@@ -129,17 +143,33 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
                 {data.label}
               </h3>
               
-              <Button
-                size="sm"
-                variant="ghost"
-                className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600 flex-shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditing(true);
-                }}
-              >
-                <Settings className="w-3 h-3" />
-              </Button>
+              <div className="flex items-center space-x-1 flex-shrink-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsContentEditorOpen(true);
+                  }}
+                  title="Editar conteúdo"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+                
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                  title="Personalizar elemento"
+                >
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
             
             <p className="text-xs text-gray-500 mt-1 capitalize">
@@ -162,6 +192,7 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
         />
       </div>
 
+      {/* Popup antigo para personalização */}
       {isEditing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card ref={cardRef} className="w-96 max-h-[90vh] overflow-auto">
@@ -253,6 +284,14 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
           </Card>
         </div>
       )}
+
+      {/* Content Editor */}
+      <ContentEditor
+        node={{ id, data }}
+        isOpen={isContentEditorOpen}
+        onClose={() => setIsContentEditorOpen(false)}
+        onSave={handleContentSave}
+      />
 
       <EmojiGallery
         isOpen={isEmojiGalleryOpen}

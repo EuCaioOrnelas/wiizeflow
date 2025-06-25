@@ -34,8 +34,8 @@ const App = () => (
           <Route path="/admin-auth" element={<AdminAuth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/pricing" element={<Pricing2 />} />
-          <Route path="/pricing-old" element={<Pricing />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/pricing2" element={<Pricing2 />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />

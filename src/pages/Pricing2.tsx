@@ -15,15 +15,12 @@ import { useNavigate } from "react-router-dom";
 
 const Pricing2 = () => {
   const [isAnnual, setIsAnnual] = useState(false);
-  const { createPaymentSession, loading } = usePayment();
+  const { createPayment, loading } = usePayment();
   const navigate = useNavigate();
 
   const handleSelectPlan = async (priceId: string, planName: string) => {
     try {
-      const sessionUrl = await createPaymentSession(priceId, planName);
-      if (sessionUrl) {
-        window.location.href = sessionUrl;
-      }
+      await createPayment(priceId);
     } catch (error) {
       console.error('Erro ao criar sessão de pagamento:', error);
     }

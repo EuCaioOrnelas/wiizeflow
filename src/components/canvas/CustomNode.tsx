@@ -1,4 +1,3 @@
-
 import { memo, useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
@@ -244,15 +243,12 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     handleNameSave(e);
   };
 
-  // Verificar se há conteúdo real
+  // Verificar se há conteúdo real usando a estrutura correta do NodeContent
   const hasRealContent = data.content && (
     (data.content.title && data.content.title.trim() !== '') ||
-    (data.content.paragraphs && data.content.paragraphs.length > 0 && 
-     data.content.paragraphs.some(p => p.content && p.content.trim() !== '')) ||
-    (data.content.list && data.content.list.length > 0 && 
-     data.content.list.some(item => item.content && item.content.trim() !== '')) ||
-    (data.content.buttons && data.content.buttons.length > 0 && 
-     data.content.buttons.some(btn => btn.text && btn.text.trim() !== ''))
+    (data.content.description && data.content.description.trim() !== '') ||
+    (data.content.items && data.content.items.length > 0 && 
+     data.content.items.some(item => item.content && item.content.trim() !== ''))
   );
 
   const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg' : '';

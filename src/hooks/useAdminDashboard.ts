@@ -34,12 +34,10 @@ export const useAdminDashboard = () => {
   useEffect(() => {
     if (isAdmin) {
       loadDashboardStats();
-      checkExpiredSubscriptions();
       syncExistingUsers();
       // Refresh stats every 30 seconds
       const interval = setInterval(() => {
         loadDashboardStats();
-        checkExpiredSubscriptions();
       }, 30000);
       return () => clearInterval(interval);
     } else if (loading === false && !isAdmin) {
@@ -60,6 +58,7 @@ export const useAdminDashboard = () => {
 
       console.log('Checking admin status for user:', user.email);
 
+      // Verificar primeiro se é o email admin
       if (user.email === 'adminwiize@wiizeflow.com.br') {
         console.log('Admin user detected by email');
         setIsAdmin(true);
@@ -67,6 +66,7 @@ export const useAdminDashboard = () => {
         return;
       }
 
+      // Verificar na tabela admin_users
       const { data: adminCheck, error } = await supabase
         .from('admin_users')
         .select('id, role')
@@ -75,16 +75,14 @@ export const useAdminDashboard = () => {
 
       console.log('Admin check result:', adminCheck, 'Error:', error);
 
-      if (error) {
+      if (error && user.email !== 'adminwiize@wiizeflow.com.br') {
         console.error('Error checking admin status:', error);
-        if (user.email === 'adminwiize@wiizeflow.com.br') {
-          setIsAdmin(true);
-          setLoading(false);
-          return;
-        }
+        setLoading(false);
+        navigate('/admin-auth');
+        return;
       }
 
-      setIsAdmin(!!adminCheck);
+      setIsAdmin(!!adminCheck || user.email === 'adminwiize@wiizeflow.com.br');
       setLoading(false);
 
       if (!adminCheck && user.email !== 'adminwiize@wiizeflow.com.br') {
@@ -126,26 +124,11 @@ export const useAdminDashboard = () => {
     }
   };
 
-  const checkExpiredSubscriptions = async () => {
-    try {
-      console.log('Checking expired subscriptions...');
-      const { data, error } = await supabase.rpc('check_expired_subscriptions');
-      
-      if (error) {
-        console.error('Error checking expired subscriptions:', error);
-      } else if (data > 0) {
-        console.log(`Updated ${data} expired subscriptions to free plan`);
-      }
-    } catch (error) {
-      console.error('Error checking expired subscriptions:', error);
-    }
-  };
-
   const loadDashboardStats = async () => {
     try {
       console.log('Loading dashboard stats...');
 
-      // Buscar todos os perfis com informações atualizadas
+      // Buscar todos os perfis
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, plan_type, subscription_status, subscription_expires_at, created_at');
@@ -176,19 +159,10 @@ export const useAdminDashboard = () => {
       const allProfiles = profiles || [];
       const totalUsers = allProfiles.length;
 
-      // Filtrar usuários por plano, considerando apenas assinaturas ativas
-      const activeProfiles = allProfiles.filter(p => {
-        if (p.plan_type === 'free') return true;
-        if (p.subscription_status !== 'active') return false;
-        if (p.subscription_expires_at) {
-          return new Date(p.subscription_expires_at) > new Date();
-        }
-        return p.subscription_status === 'active';
-      });
-
-      const freeUsers = activeProfiles.filter(p => p.plan_type === 'free').length;
-      const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
-      const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
+      // Filtrar usuários por plano
+      const freeUsers = allProfiles.filter(p => p.plan_type === 'free').length;
+      const monthlyUsers = allProfiles.filter(p => p.plan_type === 'monthly').length;
+      const annualUsers = allProfiles.filter(p => p.plan_type === 'annual').length;
       
       // Calcular receita projetada (R$ 47,00 mensal e R$ 397,00 anual)
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));

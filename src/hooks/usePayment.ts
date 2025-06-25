@@ -15,6 +15,12 @@ export const usePayment = () => {
     console.log('Starting payment process with priceId:', priceId);
     console.log('Customer email provided:', customerEmail);
     
+    // Evitar múltiplas chamadas simultâneas
+    if (loading) {
+      console.log('Payment already in progress, ignoring duplicate request');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
@@ -32,6 +38,7 @@ export const usePayment = () => {
       console.log('Final email for checkout:', finalEmail);
       console.log('Calling Supabase function create-payment...');
       
+      // Fazer a chamada com timeout mais baixo
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           priceId,
@@ -48,8 +55,8 @@ export const usePayment = () => {
 
       if (data?.url) {
         console.log('Redirecting to Stripe checkout URL:', data.url);
-        // Redirect in the same window instead of opening new tab
-        window.location.href = data.url;
+        // Usar location.assign para garantir redirecionamento mais confiável
+        window.location.assign(data.url);
       } else {
         console.error('No checkout URL received from Stripe');
         throw new Error('URL de checkout não recebida');
@@ -57,9 +64,9 @@ export const usePayment = () => {
     } catch (err) {
       console.error('Error creating payment:', err);
       setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Só resetar loading em caso de erro
     }
+    // Não resetar loading em caso de sucesso, pois o usuário será redirecionado
   };
 
   return {

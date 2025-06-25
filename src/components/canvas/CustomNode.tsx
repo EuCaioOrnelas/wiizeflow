@@ -1,3 +1,4 @@
+
 import { memo, useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
@@ -5,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { EmojiGallery } from './EmojiGallery';
 import { 
   Target, 
   MousePointer, 
@@ -34,25 +34,8 @@ interface CustomNodeComponentProps extends NodeProps {
   onOpenEditor?: (nodeId: string) => void;
 }
 
-// Cores predefinidas para o background do ícone
-const iconBackgroundColors = [
-  { name: 'Azul', value: 'bg-blue-500' },
-  { name: 'Verde', value: 'bg-green-500' },
-  { name: 'Vermelho', value: 'bg-red-500' },
-  { name: 'Amarelo', value: 'bg-yellow-500' },
-  { name: 'Roxo', value: 'bg-purple-500' },
-  { name: 'Rosa', value: 'bg-pink-500' },
-  { name: 'Laranja', value: 'bg-orange-500' },
-  { name: 'Índigo', value: 'bg-indigo-500' },
-  { name: 'Cinza', value: 'bg-gray-500' },
-  { name: 'Esmeralda', value: 'bg-emerald-500' },
-  { name: 'Ciano', value: 'bg-cyan-500' },
-  { name: 'Âmbar', value: 'bg-amber-500' }
-];
-
 export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNodeComponentProps) => {
   const [showCustomizer, setShowCustomizer] = useState(false);
-  const [showEmojiGallery, setShowEmojiGallery] = useState(false);
   const [tempName, setTempName] = useState(data.label);
   const customizerRef = useRef<HTMLDivElement>(null);
 
@@ -99,9 +82,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
       case 'wait':
         return <Clock className="w-4 h-4 text-white" />;
       case 'other':
-        if (data.customIcon) {
-          return <span className="text-white text-sm">{data.customIcon}</span>;
-        }
         return <Plus className="w-4 h-4 text-white" />;
       default:
         return <FileText className="w-4 h-4 text-white" />;
@@ -109,11 +89,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
   };
 
   const getIconBackgroundColor = (type: string) => {
-    // Para elementos customizados, usar a cor customizada se disponível
-    if (type === 'other' && data.customColor) {
-      return data.customColor;
-    }
-
     switch (type) {
       case 'capture':
         return 'bg-blue-500';
@@ -162,19 +137,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     }
   };
 
-  const handleEmojiSelect = (emoji: string) => {
-    if (onUpdateNode) {
-      onUpdateNode(id, { customIcon: emoji });
-    }
-    setShowEmojiGallery(false);
-  };
-
-  const handleColorSelect = (color: string) => {
-    if (onUpdateNode) {
-      onUpdateNode(id, { customColor: color });
-    }
-  };
-
   const handleNameSave = (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
@@ -196,14 +158,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
       cancelable: true,
     });
     e.currentTarget.parentElement?.dispatchEvent(event);
-  };
-
-  const handleIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (data.type === 'other') {
-      setShowEmojiGallery(true);
-    }
   };
 
   const handleSettingsClick = (e: React.MouseEvent) => {
@@ -228,13 +182,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
       setTempName(data.label);
       setShowCustomizer(false);
     }
-  };
-
-  const handleEmojiButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setShowEmojiGallery(true);
-    setShowCustomizer(false);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -324,10 +271,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center space-x-2 flex-1">
             <div 
-              className={`w-6 h-6 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0 ${
-                data.type === 'other' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-              }`}
-              onClick={handleIconClick}
+              className={`w-6 h-6 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}
             >
               {getNodeIcon(data.type)}
             </div>
@@ -369,12 +313,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
                 side="top" 
                 align="end"
                 ref={customizerRef}
-                onPointerDownOutside={(e) => {
-                  // Permitir cliques dentro do emoji gallery
-                  if (showEmojiGallery) {
-                    e.preventDefault();
-                  }
-                }}
               >
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   {/* Campo para editar o nome */}
@@ -394,51 +332,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
                       </Button>
                     </div>
                   </div>
-
-                  {/* Configurações especiais para elemento customizado */}
-                  {data.type === 'other' && (
-                    <>
-                      {/* Botão para abrir galeria de emojis */}
-                      <div>
-                        <Label className="text-sm font-medium">Ícone do Elemento</Label>
-                        <Button
-                          type="button"
-                          onClick={handleEmojiButtonClick}
-                          variant="outline"
-                          className="w-full mt-1 flex items-center justify-center space-x-2"
-                        >
-                          <span className="text-lg">{data.customIcon || '📝'}</span>
-                          <span>Alterar Ícone</span>
-                        </Button>
-                      </div>
-
-                      {/* Seletor de cor do background do ícone */}
-                      <div>
-                        <Label className="text-sm font-medium">Cor do Fundo do Ícone</Label>
-                        <div className="grid grid-cols-6 gap-2 mt-2">
-                          {iconBackgroundColors.map((color) => (
-                            <button
-                              key={color.value}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleColorSelect(color.value);
-                              }}
-                              className={`w-8 h-8 rounded ${color.value} border-2 transition-all ${
-                                data.customColor === color.value 
-                                  ? 'border-gray-800 scale-110' 
-                                  : 'border-gray-300 hover:border-gray-500'
-                              }`}
-                              title={color.name}
-                            />
-                          ))}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Cor atual: {iconBackgroundColors.find(c => c.value === data.customColor)?.name || 'Padrão'}
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </form>
               </PopoverContent>
             </Popover>
@@ -477,16 +370,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
           </div>
         )}
       </div>
-
-      {/* Galeria de Emojis - exclusiva para elementos customizados */}
-      {data.type === 'other' && (
-        <EmojiGallery
-          isOpen={showEmojiGallery}
-          onClose={() => setShowEmojiGallery(false)}
-          onEmojiSelect={handleEmojiSelect}
-          currentEmoji={data.customIcon}
-        />
-      )}
     </div>
   );
 });

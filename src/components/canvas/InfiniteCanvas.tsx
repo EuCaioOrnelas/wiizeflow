@@ -181,11 +181,11 @@ const InfiniteCanvasInner = ({
   };
 
   // Template operations
-  const handleLoadTemplate = useCallback((template: Template) => {
+  const handleLoadTemplate = useCallback((nodes: Node<CustomNodeData>[], edges: Edge[]) => {
     // Generate new IDs for nodes and edges to avoid conflicts
     const idMap = new Map();
     
-    const newNodes = template.nodes.map(node => {
+    const newNodes = nodes.map(node => {
       const newId = `node-${Date.now()}-${Math.random()}`;
       idMap.set(node.id, newId);
       return {
@@ -195,7 +195,7 @@ const InfiniteCanvasInner = ({
       };
     });
 
-    const newEdges = template.edges.map(edge => ({
+    const newEdges = edges.map(edge => ({
       ...edge,
       id: `edge-${Date.now()}-${Math.random()}`,
       source: idMap.get(edge.source) || edge.source,
@@ -208,7 +208,7 @@ const InfiniteCanvasInner = ({
     
     toast({
       title: "Template carregado!",
-      description: `Template "${template.name}" foi carregado com sucesso.`,
+      description: "Template foi carregado com sucesso.",
     });
   }, [setNodes, setEdges, saveToHistory, toast]);
 

@@ -7,9 +7,10 @@ import { Minus, Workflow, Zap } from 'lucide-react';
 interface EdgeTypeSelectorProps {
   currentType: EdgeType;
   onTypeChange: (type: EdgeType) => void;
+  onApplyToAll?: () => void;
 }
 
-export const EdgeTypeSelector = ({ currentType, onTypeChange }: EdgeTypeSelectorProps) => {
+export const EdgeTypeSelector = ({ currentType, onTypeChange, onApplyToAll }: EdgeTypeSelectorProps) => {
   const edgeTypes: { type: EdgeType; name: string; icon: React.ReactNode; description: string }[] = [
     { 
       type: 'straight', 
@@ -25,6 +26,13 @@ export const EdgeTypeSelector = ({ currentType, onTypeChange }: EdgeTypeSelector
     },
   ];
 
+  const handleTypeChange = (type: EdgeType) => {
+    onTypeChange(type);
+    if (onApplyToAll) {
+      onApplyToAll();
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -39,7 +47,7 @@ export const EdgeTypeSelector = ({ currentType, onTypeChange }: EdgeTypeSelector
           {edgeTypes.map((edgeType) => (
             <button
               key={edgeType.type}
-              onClick={() => onTypeChange(edgeType.type)}
+              onClick={() => handleTypeChange(edgeType.type)}
               className={`w-full p-2 text-left rounded-md border transition-colors hover:bg-gray-50 ${
                 currentType === edgeType.type 
                   ? 'border-green-500 bg-green-50' 
@@ -57,6 +65,9 @@ export const EdgeTypeSelector = ({ currentType, onTypeChange }: EdgeTypeSelector
               </div>
             </button>
           ))}
+          <div className="pt-2 border-t">
+            <p className="text-xs text-gray-500 mb-1">Esta alteração será aplicada a todas as linhas existentes</p>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

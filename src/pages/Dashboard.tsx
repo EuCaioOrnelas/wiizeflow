@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -224,7 +225,7 @@ const Dashboard = () => {
   };
 
   const handleUpgrade = () => {
-    window.location.href = '/#pricing-section';
+    navigate('/pricing');
   };
 
   const handleAccount = () => {

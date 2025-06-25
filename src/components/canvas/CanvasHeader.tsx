@@ -7,8 +7,6 @@ import {
   Save, 
   Undo, 
   Redo, 
-  Download, 
-  FileText,
   Edit3,
   Check,
   X,
@@ -35,8 +33,6 @@ export const CanvasHeader = ({
   onRedo,
   canUndo,
   canRedo,
-  onExportAsImage,
-  onExportAsPDF,
   onSave,
   onOpenTemplateManager
 }: CanvasHeaderProps) => {
@@ -146,28 +142,6 @@ export const CanvasHeader = ({
             <FolderOpen className="w-4 h-4" />
             Templates
           </Button>
-
-          {/* Export */}
-          <div className="flex items-center space-x-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onExportAsImage}
-              title="Exportar como PNG"
-            >
-              <Download className="w-4 h-4" />
-              PNG
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onExportAsPDF}
-              title="Exportar como PDF"
-            >
-              <FileText className="w-4 h-4" />
-              PDF
-            </Button>
-          </div>
 
           {/* Save */}
           <Button

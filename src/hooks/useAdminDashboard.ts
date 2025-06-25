@@ -127,9 +127,12 @@ export const useAdminDashboard = () => {
 
   const loadDashboardStats = async () => {
     try {
+      console.log('Loading dashboard stats...');
+      
+      // Carregar todos os profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('plan_type, subscription_status, subscription_expires_at');
+        .select('plan_type, subscription_status, subscription_expires_at, created_at');
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
@@ -144,10 +147,20 @@ export const useAdminDashboard = () => {
         return;
       }
 
+      console.log('Loaded profiles:', profiles);
+
+      // Contar usuários online (considerando atividade nos últimos 15 minutos)
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('user_sessions')
+        .select('user_id')
+        .gte('last_activity', new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+      const onlineUsers = sessionsError ? 0 : (sessions?.length || 0);
+
       // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
       const activeProfiles = profiles?.filter(p => {
         if (p.plan_type === 'free') return true;
-        if (p.subscription_status !== 'active') return false;
+        if (p.subscription_status && p.subscription_status !== 'active') return false;
         if (p.subscription_expires_at) {
           return new Date(p.subscription_expires_at) > new Date();
         }
@@ -159,17 +172,20 @@ export const useAdminDashboard = () => {
       const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
       const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
       
-      // Novos valores: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
+      // Calcular receita projetada: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
 
-      setStats({
-        online_users: 1,
+      const newStats = {
+        online_users: Math.max(onlineUsers, 1), // Pelo menos 1 (admin atual)
         total_users: totalUsers,
         free_users: freeUsers,
         monthly_users: monthlyUsers,
         annual_users: annualUsers,
         projected_monthly_revenue: projectedRevenue,
-      });
+      };
+
+      console.log('Calculated stats:', newStats);
+      setStats(newStats);
 
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -183,6 +199,9 @@ export const useAdminDashboard = () => {
 
   const createUser = async (email: string, password: string, name: string, planType: string, subscriptionPeriod: string) => {
     try {
+      console.log('Creating user with params:', { email, name, planType, subscriptionPeriod });
+
+      // Criar usuário usando a função RPC
       const { data, error } = await supabase.rpc('create_admin_user', {
         user_email: email,
         user_password: password,

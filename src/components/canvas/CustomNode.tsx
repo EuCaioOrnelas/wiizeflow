@@ -1,4 +1,5 @@
-import { memo, useState } from 'react';
+
+import { memo, useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
@@ -17,14 +18,12 @@ import {
   Plus,
   Settings,
   Edit3,
-  Circle,
   TrendingUp,
   TrendingDown,
   Instagram,
   Youtube,
   Play,
   Megaphone,
-  Globe,
   Building2,
   Clock,
   Phone
@@ -56,6 +55,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [showEmojiGallery, setShowEmojiGallery] = useState(false);
   const [tempName, setTempName] = useState(data.label);
+  const customizerRef = useRef<HTMLDivElement>(null);
 
   const getNodeIcon = (type: string) => {
     switch (type) {
@@ -176,15 +176,15 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     }
   };
 
-  const handleNameSave = (e?: React.MouseEvent) => {
+  const handleNameSave = (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (onUpdateNode && tempName.trim()) {
+    if (onUpdateNode && tempName.trim() && tempName.trim() !== data.label) {
       onUpdateNode(id, { label: tempName.trim() });
-      setShowCustomizer(false);
     }
+    setShowCustomizer(false);
   };
 
   const handleOpenEditor = (e: React.MouseEvent) => {
@@ -210,12 +210,13 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    setTempName(data.label);
     setShowCustomizer(!showCustomizer);
   };
 
-  const handleInputClick = (e: React.MouseEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    e.preventDefault();
+    setTempName(e.target.value);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
@@ -223,6 +224,10 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     if (e.key === 'Enter') {
       e.preventDefault();
       handleNameSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setTempName(data.label);
+      setShowCustomizer(false);
     }
   };
 
@@ -233,17 +238,29 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     setShowCustomizer(false);
   };
 
-  const hasContent = data.hasContent && data.content;
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleNameSave(e);
+  };
+
+  // Verificar se há conteúdo real
+  const hasRealContent = data.content && (
+    (data.content.title && data.content.title.trim() !== '') ||
+    (data.content.paragraphs && data.content.paragraphs.length > 0 && 
+     data.content.paragraphs.some(p => p.content && p.content.trim() !== '')) ||
+    (data.content.list && data.content.list.length > 0 && 
+     data.content.list.some(item => item.content && item.content.trim() !== '')) ||
+    (data.content.buttons && data.content.buttons.length > 0 && 
+     data.content.buttons.some(btn => btn.text && btn.text.trim() !== ''))
+  );
+
   const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg' : '';
   const iconBgClass = getIconBackgroundColor(data.type);
 
   return (
     <div className={`relative ${selectedClass}`}>
-      
-      {/* Indicador de conteúdo */}
-      
-
-      {/* Handles nas 4 direções - corrigindo direções */}
+      {/* Handles nas 4 direções */}
       <Handle
         type="target"
         position={Position.Top}
@@ -334,119 +351,101 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
               <Edit3 className="w-3 h-3" />
             </Button>
             
-            {/* Configurações - apenas para tipos não customizados */}
-            {data.type !== 'other' && (
-              <Popover open={showCustomizer} onOpenChange={setShowCustomizer}>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
-                    onClick={handleSettingsClick}
-                  >
-                    <Settings className="w-3 h-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" side="top" align="end">
-                  <div className="space-y-4">
-                    {/* Campo para editar o nome */}
-                    <div>
-                      <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
-                      <div className="flex space-x-2 mt-1">
-                        <Input
-                          id="element-name"
-                          value={tempName}
-                          onChange={(e) => setTempName(e.target.value)}
-                          onKeyDown={handleInputKeyDown}
-                          className="flex-1"
-                          placeholder="Nome do elemento"
-                          onClick={handleInputClick}
-                        />
-                        <Button onClick={handleNameSave} size="sm">
-                          Salvar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {/* Configurações especiais para elemento customizado */}
-            {data.type === 'other' && (
-              <Popover open={showCustomizer} onOpenChange={setShowCustomizer}>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
-                    onClick={handleSettingsClick}
-                  >
-                    <Settings className="w-3 h-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" side="top" align="end">
-                  <div className="space-y-4">
-                    {/* Campo para editar o nome */}
-                    <div>
-                      <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
-                      <div className="flex space-x-2 mt-1">
-                        <Input
-                          id="element-name"
-                          value={tempName}
-                          onChange={(e) => setTempName(e.target.value)}
-                          onKeyDown={handleInputKeyDown}
-                          className="flex-1"
-                          placeholder="Nome do elemento"
-                          onClick={handleInputClick}
-                        />
-                        <Button onClick={handleNameSave} size="sm">
-                          Salvar
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Botão para abrir galeria de emojis */}
-                    <div>
-                      <Label className="text-sm font-medium">Ícone do Elemento</Label>
-                      <Button
-                        onClick={handleEmojiButtonClick}
-                        variant="outline"
-                        className="w-full mt-1 flex items-center justify-center space-x-2"
-                      >
-                        <span className="text-lg">{data.customIcon || '📝'}</span>
-                        <span>Alterar Ícone</span>
+            {/* Configurações */}
+            <Popover open={showCustomizer} onOpenChange={(open) => {
+              if (!open) {
+                setTempName(data.label);
+              }
+              setShowCustomizer(open);
+            }}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                  onClick={handleSettingsClick}
+                >
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-80 p-4" 
+                side="top" 
+                align="end"
+                ref={customizerRef}
+                onPointerDownOutside={(e) => {
+                  // Permitir cliques dentro do emoji gallery
+                  if (showEmojiGallery) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  {/* Campo para editar o nome */}
+                  <div>
+                    <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
+                    <div className="flex space-x-2 mt-1">
+                      <Input
+                        id="element-name"
+                        value={tempName}
+                        onChange={handleInputChange}
+                        onKeyDown={handleInputKeyDown}
+                        className="flex-1"
+                        placeholder="Nome do elemento"
+                      />
+                      <Button type="submit" size="sm">
+                        Salvar
                       </Button>
                     </div>
-
-                    {/* Seletor de cor do background do ícone */}
-                    <div>
-                      <Label className="text-sm font-medium">Cor do Fundo do Ícone</Label>
-                      <div className="grid grid-cols-6 gap-2 mt-2">
-                        {iconBackgroundColors.map((color) => (
-                          <button
-                            key={color.value}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleColorSelect(color.value);
-                            }}
-                            className={`w-8 h-8 rounded ${color.value} border-2 transition-all ${
-                              data.customColor === color.value 
-                                ? 'border-gray-800 scale-110' 
-                                : 'border-gray-300 hover:border-gray-500'
-                            }`}
-                            title={color.name}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Cor atual: {iconBackgroundColors.find(c => c.value === data.customColor)?.name || 'Padrão'}
-                      </div>
-                    </div>
                   </div>
-                </PopoverContent>
-              </Popover>
-            )}
+
+                  {/* Configurações especiais para elemento customizado */}
+                  {data.type === 'other' && (
+                    <>
+                      {/* Botão para abrir galeria de emojis */}
+                      <div>
+                        <Label className="text-sm font-medium">Ícone do Elemento</Label>
+                        <Button
+                          type="button"
+                          onClick={handleEmojiButtonClick}
+                          variant="outline"
+                          className="w-full mt-1 flex items-center justify-center space-x-2"
+                        >
+                          <span className="text-lg">{data.customIcon || '📝'}</span>
+                          <span>Alterar Ícone</span>
+                        </Button>
+                      </div>
+
+                      {/* Seletor de cor do background do ícone */}
+                      <div>
+                        <Label className="text-sm font-medium">Cor do Fundo do Ícone</Label>
+                        <div className="grid grid-cols-6 gap-2 mt-2">
+                          {iconBackgroundColors.map((color) => (
+                            <button
+                              key={color.value}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleColorSelect(color.value);
+                              }}
+                              className={`w-8 h-8 rounded ${color.value} border-2 transition-all ${
+                                data.customColor === color.value 
+                                  ? 'border-gray-800 scale-110' 
+                                  : 'border-gray-300 hover:border-gray-500'
+                              }`}
+                              title={color.name}
+                            />
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Cor atual: {iconBackgroundColors.find(c => c.value === data.customColor)?.name || 'Padrão'}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </form>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         
@@ -474,7 +473,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
            data.type === 'other' ? 'Customizado' : data.type}
         </div>
 
-        {hasContent && (
+        {hasRealContent && (
           <div className="text-xs bg-gray-100 rounded p-1 mt-2">
             {data.content && data.content.title && (
               <div className="font-medium truncate">{data.content.title}</div>

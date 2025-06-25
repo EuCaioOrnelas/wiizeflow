@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import { Settings, X, Check } from 'lucide-react';
@@ -108,48 +107,57 @@ export const CustomNode = ({ id, data, onUpdateNode }: CustomNodeProps) => {
 
   return (
     <>
-      <div 
-        className="relative bg-white border-2 rounded-lg shadow-md min-w-[120px] p-3"
-        style={{ borderColor: data.customColor || '#6B7280' }}
-      >
+      <div className="relative bg-white rounded-lg shadow-sm border border-gray-200 min-w-[280px] max-w-[320px] p-4 hover:shadow-md transition-shadow">
         <Handle
           type="target"
           position={Position.Left}
-          className="w-3 h-3 !bg-gray-400"
+          className="w-2 h-2 !bg-gray-400 !border-0"
           isConnectable={!isConnecting}
         />
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 flex-1">
-            <span className="text-lg">{data.customIcon || '📝'}</span>
-            <span className="text-sm font-medium text-gray-900 truncate">
-              {data.label}
-            </span>
+        <div className="flex items-start space-x-3">
+          <div 
+            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-medium"
+            style={{ backgroundColor: data.customColor || '#6B7280' }}
+          >
+            {data.customIcon || '📝'}
           </div>
           
-          <Button
-            size="sm"
-            variant="ghost"
-            className="p-1 h-6 w-6 text-gray-500 hover:text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-          >
-            <Settings className="w-3 h-3" />
-          </Button>
-        </div>
-
-        {hasActualContent() && (
-          <div className="mt-2 px-2 py-1 bg-gray-100 rounded text-xs text-gray-600">
-            Conteúdo interno
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900 truncate pr-2">
+                {data.label}
+              </h3>
+              
+              <Button
+                size="sm"
+                variant="ghost"
+                className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600 flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+              >
+                <Settings className="w-3 h-3" />
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-1 capitalize">
+              {data.type}
+            </p>
+            
+            {hasActualContent() && (
+              <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                Configurado
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         <Handle
           type="source"
           position={Position.Right}
-          className="w-3 h-3 !bg-gray-400"
+          className="w-2 h-2 !bg-gray-400 !border-0"
           isConnectable={!isConnecting}
         />
       </div>

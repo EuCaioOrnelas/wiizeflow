@@ -25,7 +25,7 @@ import { ContentEditor } from './ContentEditor';
 import { CanvasSidebar } from './CanvasSidebar';
 import { ContextMenu } from './ContextMenu';
 import { CanvasHeader } from './CanvasHeader';
-import { TemplateManager } from './TemplateManager';
+import TemplateManager from './TemplateManager';
 import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { useCanvasHotkeys } from '@/hooks/useCanvasHotkeys';
 import { useCanvasOperations } from '@/hooks/useCanvasOperations';

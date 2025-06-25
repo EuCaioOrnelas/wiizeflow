@@ -16,6 +16,8 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
     contentItems: [],
   });
 
+  const [hasContentToSave, setHasContentToSave] = useState(false);
+
   useEffect(() => {
     if (node.data.content) {
       const content = node.data.content as NodeContent;
@@ -24,15 +26,23 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
         description: content.description || '',
         contentItems: content.items || [],
       });
+      
+      // Check if there's actual content
+      const hasRealContent = !!(content.title || content.description || (content.items && content.items.length > 0));
+      setHasContentToSave(hasRealContent);
+    } else {
+      setHasContentToSave(false);
     }
   }, [node]);
 
   const setTitle = useCallback((title: string) => {
     setState(prev => ({ ...prev, title }));
+    setHasContentToSave(true);
   }, []);
 
   const setDescription = useCallback((description: string) => {
     setState(prev => ({ ...prev, description }));
+    setHasContentToSave(true);
   }, []);
 
   const addContentItem = useCallback((type: ContentItem['type']) => {
@@ -51,6 +61,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
       ...prev,
       contentItems: [...prev.contentItems, newItem]
     }));
+    setHasContentToSave(true);
   }, []);
 
   const updateContentItem = useCallback((id: string, updates: Partial<ContentItem>) => {
@@ -60,6 +71,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
         item.id === id ? { ...item, ...updates } : item
       )
     }));
+    setHasContentToSave(true);
   }, []);
 
   const removeContentItem = useCallback((id: string) => {
@@ -67,6 +79,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
       ...prev,
       contentItems: prev.contentItems.filter(item => item.id !== id)
     }));
+    setHasContentToSave(true);
   }, []);
 
   const addListItem = useCallback((itemId: string) => {
@@ -89,6 +102,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
         return item;
       })
     }));
+    setHasContentToSave(true);
   }, []);
 
   const updateListItem = useCallback((itemId: string, listItemId: string, text: string) => {
@@ -106,6 +120,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
         return item;
       })
     }));
+    setHasContentToSave(true);
   }, []);
 
   const toggleChecklistItem = useCallback((itemId: string, listItemId: string) => {
@@ -123,16 +138,19 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
         return item;
       })
     }));
+    setHasContentToSave(true);
   }, []);
 
   const handleSave = useCallback(() => {
+    // Only save if there's actual content or if explicitly saving
     const content: NodeContent = {
-      title: state.title,
-      description: state.description,
+      title: state.title.trim(),
+      description: state.description.trim(),
       items: state.contentItems,
     };
     
     onSave(content);
+    setHasContentToSave(false);
   }, [state, onSave]);
 
   return {
@@ -146,5 +164,6 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
     updateListItem,
     toggleChecklistItem,
     handleSave,
+    hasContentToSave,
   };
 };

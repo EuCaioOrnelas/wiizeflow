@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -224,7 +225,7 @@ const Dashboard = () => {
   };
 
   const handleUpgrade = () => {
-    window.location.href = '/#pricing-section';
+    navigate('/', { state: { scrollToPricing: true } });
   };
 
   const handleAccount = () => {
@@ -294,7 +295,11 @@ const Dashboard = () => {
       <header className="bg-white border-b transition-colors duration-300">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Target className="w-8 h-8 text-green-600" />
+            <img 
+              src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
+              alt="WiizeFlow Logo" 
+              className="w-8 h-8"
+            />
             <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           

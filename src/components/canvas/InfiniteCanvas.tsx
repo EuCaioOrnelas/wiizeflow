@@ -30,8 +30,6 @@ import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { useCanvasHotkeys } from '@/hooks/useCanvasHotkeys';
 import { useCanvasOperations } from '@/hooks/useCanvasOperations';
 import { CustomNodeData, InfiniteCanvasProps, Template } from '@/types/canvas';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { EdgeTypeSelector } from './EdgeTypeSelector';
 import { EdgeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
@@ -138,7 +136,8 @@ const InfiniteCanvasInner = ({
     copyNodes,
     pasteNodes,
     deleteSelected,
-    updateNodeContent
+    updateNodeContent,
+    updateAllEdgesType
   } = useCanvasOperations({
     nodes,
     edges,
@@ -286,6 +285,12 @@ const InfiniteCanvasInner = ({
     [setEdges, saveToHistory, currentEdgeType]
   );
 
+  // Handle edge type change for all edges
+  const handleEdgeTypeChange = useCallback((newType: EdgeType) => {
+    setCurrentEdgeType(newType);
+    updateAllEdgesType(newType);
+  }, [updateAllEdgesType]);
+
   // Função para deletar edge ao clicar com confirmação
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.stopPropagation();
@@ -336,196 +341,6 @@ const InfiniteCanvasInner = ({
     }
   }, [nodes, edges, onSave]);
 
-  // Função melhorada para exportar como imagem
-  const exportAsImage = useCallback(async () => {
-    if (reactFlowWrapper.current) {
-      try {
-        // Aguardar um momento para garantir que tudo esteja renderizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Forçar re-renderização dos SVGs
-        const svgElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edges svg');
-        svgElements.forEach((svg: any) => {
-          svg.style.position = 'absolute';
-          svg.style.zIndex = '1';
-          svg.style.pointerEvents = 'none';
-        });
-
-        const pathElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edge path');
-        pathElements.forEach((path: any) => {
-          path.style.stroke = '#10b981';
-          path.style.strokeWidth = '2';
-          path.style.fill = 'none';
-        });
-
-        // Aguardar mais um momento após aplicar os estilos
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(reactFlowWrapper.current, {
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          scale: 2,
-          logging: false,
-          width: reactFlowWrapper.current.scrollWidth,
-          height: reactFlowWrapper.current.scrollHeight,
-          ignoreElements: (element) => {
-            return element.classList.contains('react-flow__minimap') ||
-                   element.classList.contains('react-flow__controls') ||
-                   element.classList.contains('react-flow__panel');
-          },
-          onclone: (clonedDoc, element) => {
-            // Garantir que todos os SVGs estejam visíveis no clone
-            const clonedSvgs = clonedDoc.querySelectorAll('.react-flow__edges svg');
-            clonedSvgs.forEach((svg: any) => {
-              svg.style.position = 'absolute';
-              svg.style.zIndex = '10';
-              svg.style.display = 'block';
-              svg.style.visibility = 'visible';
-              svg.style.opacity = '1';
-            });
-            
-            const clonedPaths = clonedDoc.querySelectorAll('.react-flow__edge path');
-            clonedPaths.forEach((path: any) => {
-              path.style.stroke = '#10b981';
-              path.style.strokeWidth = '2';
-              path.style.fill = 'none';
-              path.style.display = 'block';
-              path.style.visibility = 'visible';
-              path.style.opacity = '1';
-            });
-
-            // Garantir que o container das edges esteja visível
-            const edgesContainer = clonedDoc.querySelector('.react-flow__edges');
-            if (edgesContainer) {
-              (edgesContainer as any).style.position = 'absolute';
-              (edgesContainer as any).style.zIndex = '10';
-              (edgesContainer as any).style.display = 'block';
-              (edgesContainer as any).style.visibility = 'visible';
-              (edgesContainer as any).style.opacity = '1';
-            }
-          }
-        });
-
-        const link = document.createElement('a');
-        link.download = `${funnelName}-funnel.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-
-        toast({
-          title: "Imagem exportada!",
-          description: "O funil foi exportado como PNG com sucesso.",
-        });
-      } catch (error) {
-        console.error('Erro ao exportar imagem:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao exportar imagem.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [funnelName, toast]);
-
-  // Função melhorada para exportar como PDF
-  const exportAsPDF = useCallback(async () => {
-    if (reactFlowWrapper.current) {
-      try {
-        // Aguardar um momento para garantir que tudo esteja renderizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Forçar re-renderização dos SVGs
-        const svgElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edges svg');
-        svgElements.forEach((svg: any) => {
-          svg.style.position = 'absolute';
-          svg.style.zIndex = '1';
-          svg.style.pointerEvents = 'none';
-        });
-
-        const pathElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edge path');
-        pathElements.forEach((path: any) => {
-          path.style.stroke = '#10b981';
-          path.style.strokeWidth = '2';
-          path.style.fill = 'none';
-        });
-
-        // Aguardar mais um momento após aplicar os estilos
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(reactFlowWrapper.current, {
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          scale: 2,
-          logging: false,
-          width: reactFlowWrapper.current.scrollWidth,
-          height: reactFlowWrapper.current.scrollHeight,
-          ignoreElements: (element) => {
-            return element.classList.contains('react-flow__minimap') ||
-                   element.classList.contains('react-flow__controls') ||
-                   element.classList.contains('react-flow__panel');
-          },
-          onclone: (clonedDoc, element) => {
-            // Garantir que todos os SVGs estejam visíveis no clone
-            const clonedSvgs = clonedDoc.querySelectorAll('.react-flow__edges svg');
-            clonedSvgs.forEach((svg: any) => {
-              svg.style.position = 'absolute';
-              svg.style.zIndex = '10';
-              svg.style.display = 'block';
-              svg.style.visibility = 'visible';
-              svg.style.opacity = '1';
-            });
-            
-            const clonedPaths = clonedDoc.querySelectorAll('.react-flow__edge path');
-            clonedPaths.forEach((path: any) => {
-              path.style.stroke = '#10b981';
-              path.style.strokeWidth = '2';
-              path.style.fill = 'none';
-              path.style.display = 'block';
-              path.style.visibility = 'visible';
-              path.style.opacity = '1';
-            });
-
-            // Garantir que o container das edges esteja visível
-            const edgesContainer = clonedDoc.querySelector('.react-flow__edges');
-            if (edgesContainer) {
-              (edgesContainer as any).style.position = 'absolute';
-              (edgesContainer as any).style.zIndex = '10';
-              (edgesContainer as any).style.display = 'block';
-              (edgesContainer as any).style.visibility = 'visible';
-              (edgesContainer as any).style.opacity = '1';
-            }
-          }
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-          unit: 'px',
-          format: [canvas.width, canvas.height]
-        });
-
-        const imgWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = pdf.internal.pageSize.getHeight();
-
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`${funnelName}-funnel.pdf`);
-
-        toast({
-          title: "PDF exportado!",
-          description: "O funil foi exportado como PDF com sucesso.",
-        });
-      } catch (error) {
-        console.error('Erro ao exportar PDF:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao exportar PDF.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [funnelName, toast]);
-
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">
       {!isMinimized && <CanvasSidebar onAddNode={addNode} />}
@@ -539,8 +354,6 @@ const InfiniteCanvasInner = ({
             onRedo={handleRedo}
             canUndo={canUndo}
             canRedo={canRedo}
-            onExportAsImage={exportAsImage}
-            onExportAsPDF={exportAsPDF}
             onSave={saveFunnel}
             onOpenTemplateManager={userPlan !== 'free' ? () => setIsTemplateManagerOpen(true) : undefined}
           />
@@ -569,6 +382,7 @@ const InfiniteCanvasInner = ({
             minZoom={0.1}
             maxZoom={4}
             attributionPosition="bottom-left"
+            nodeOrigin={[0.5, 0.5]}
           >
             <Controls />
             <MiniMap 
@@ -591,7 +405,7 @@ const InfiniteCanvasInner = ({
                 {!isMinimized && (
                   <EdgeTypeSelector 
                     currentType={currentEdgeType}
-                    onTypeChange={setCurrentEdgeType}
+                    onTypeChange={handleEdgeTypeChange}
                   />
                 )}
               </div>

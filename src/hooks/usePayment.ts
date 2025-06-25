@@ -38,19 +38,19 @@ export const usePayment = () => {
       console.log('Final email for checkout:', finalEmail);
       console.log('Calling Supabase function create-payment...');
       
-      // Fazer a chamada com timeout mais baixo
-      const { data, error } = await supabase.functions.invoke('create-payment', {
+      // Fazer a chamada para a edge function
+      const { data, error: functionError } = await supabase.functions.invoke('create-payment', {
         body: {
           priceId,
           customerEmail: finalEmail
         }
       });
 
-      console.log('Supabase function response:', { data, error });
+      console.log('Supabase function response:', { data, error: functionError });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+      if (functionError) {
+        console.error('Supabase function error:', functionError);
+        throw new Error(functionError.message || 'Erro ao processar pagamento');
       }
 
       if (data?.url) {
@@ -63,7 +63,8 @@ export const usePayment = () => {
       }
     } catch (err) {
       console.error('Error creating payment:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao processar pagamento';
+      setError(errorMessage);
       setLoading(false); // Só resetar loading em caso de erro
     }
     // Não resetar loading em caso de sucesso, pois o usuário será redirecionado

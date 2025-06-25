@@ -13,7 +13,7 @@ export const usePayment = () => {
 
   const createPayment = async (priceId: string, customerEmail?: string) => {
     console.log('Starting payment process with priceId:', priceId);
-    console.log('Customer email:', customerEmail);
+    console.log('Customer email provided:', customerEmail);
     
     setLoading(true);
     setError(null);
@@ -48,8 +48,8 @@ export const usePayment = () => {
 
       if (data?.url) {
         console.log('Redirecting to Stripe checkout URL:', data.url);
-        // Open Stripe checkout in a new tab
-        window.open(data.url, '_blank');
+        // Redirect in the same window instead of opening new tab
+        window.location.href = data.url;
       } else {
         console.error('No checkout URL received from Stripe');
         throw new Error('URL de checkout não recebida');

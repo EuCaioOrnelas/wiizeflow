@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Target, Crown } from "lucide-react";
@@ -12,6 +11,8 @@ const Pricing = () => {
   const [selectedPriceId, setSelectedPriceId] = useState<string>("");
 
   const handlePlanClick = async (priceId: string) => {
+    console.log('Plan clicked with priceId:', priceId);
+    
     // Verificar se usuário está logado
     const user = await getCurrentUser();
     if (user?.email) {
@@ -178,7 +179,7 @@ const Pricing = () => {
                   disabled={loading}
                   className={`w-full ${getButtonStyle(plan)}`}
                 >
-                  {loading && plan.priceId === selectedPriceId ? "Processando..." : plan.buttonText}
+                  {loading ? "Processando..." : plan.buttonText}
                 </Button>
               </CardContent>
             </Card>

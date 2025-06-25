@@ -17,6 +17,14 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
   const [originalText, setOriginalText] = useState(data.label || 'Clique para editar texto...');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Atualizar estado local quando data.label mudar externamente
+  useEffect(() => {
+    if (!isEditing && data.label !== text) {
+      setText(data.label || 'Clique para editar texto...');
+      setOriginalText(data.label || 'Clique para editar texto...');
+    }
+  }, [data.label, isEditing, text]);
+
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
@@ -37,7 +45,7 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
       e.stopPropagation();
       e.preventDefault();
     }
-    if (onUpdateNode && text.trim()) {
+    if (onUpdateNode && text.trim() && text.trim() !== originalText) {
       onUpdateNode(id, { label: text.trim() });
     }
     setIsEditing(false);
@@ -66,6 +74,10 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
   const handleTextareaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value.slice(0, 500));
   };
 
   const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50' : '';
@@ -136,7 +148,7 @@ export const FreeTextNode = memo(({ id, data, selected, onUpdateNode }: FreeText
             <Textarea
               ref={textareaRef}
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 500))}
+              onChange={handleTextChange}
               onKeyDown={handleKeyDown}
               onClick={handleTextareaClick}
               maxLength={500}

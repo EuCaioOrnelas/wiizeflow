@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,16 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
   const [originalName, setOriginalName] = useState(data.label);
   const [tempIcon, setTempIcon] = useState(data.customIcon);
   const [tempColor, setTempColor] = useState(data.customColor);
+
+  // Sincronizar estado local com mudanças externas
+  useEffect(() => {
+    if (!showCustomizer) {
+      setTempName(data.label);
+      setOriginalName(data.label);
+      setTempIcon(data.customIcon);
+      setTempColor(data.customColor);
+    }
+  }, [data.label, data.customIcon, data.customColor, showCustomizer]);
 
   const getNodeIcon = (type: string) => {
     switch (type) {

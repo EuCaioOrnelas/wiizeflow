@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -640,15 +639,13 @@ const InfiniteCanvasInner = ({
         />
       )}
 
-      {/* Template Manager - só renderiza se o usuário não for free */}
-      {userPlan !== 'free' && (
-        <TemplateManager
-          isOpen={isTemplateManagerOpen}
-          onClose={() => setIsTemplateManagerOpen(false)}
-          onLoadTemplate={handleLoadTemplate}
-          onSaveTemplate={handleSaveTemplate}
-        />
-      )}
+      {/* Template Manager - always render but controlled by isOpen prop */}
+      <TemplateManager
+        isOpen={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        onLoadTemplate={handleLoadTemplate}
+        onSaveTemplate={handleSaveTemplate}
+      />
 
       {/* Alert Dialog para confirmar exclusão de conexão */}
       <AlertDialog open={!!edgeToDelete} onOpenChange={() => setEdgeToDelete(null)}>

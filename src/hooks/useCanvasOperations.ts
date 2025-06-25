@@ -63,7 +63,7 @@ export const useCanvasOperations = ({
       case 'text':
         return 'Anotação';
       case 'freetext':
-        return 'Texto Livre';
+        return 'Clique para editar texto...';
       case 'wait':
         return 'Tempo de espera';
       case 'other':
@@ -76,7 +76,7 @@ export const useCanvasOperations = ({
   const addNode = useCallback((type: string, position: { x: number; y: number }) => {
     const newNode: Node<CustomNodeData> = {
       id: `node-${Date.now()}`,
-      type: 'custom',
+      type: type === 'freetext' ? 'freetext' : 'custom',
       position,
       data: {
         label: getNodeLabel(type),

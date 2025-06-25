@@ -45,6 +45,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FreeTextNode } from './FreeTextNode';
 
 const nodeTypes = {
   custom: (props: any) => (
@@ -55,6 +56,16 @@ const nodeTypes = {
           props.onUpdateNode(nodeId, updates);
         }
       }} 
+    />
+  ),
+  freetext: (props: any) => (
+    <FreeTextNode
+      {...props}
+      onUpdateNode={(nodeId: string, updates: Partial<CustomNodeData>) => {
+        if (props.onUpdateNode) {
+          props.onUpdateNode(nodeId, updates);
+        }
+      }}
     />
   ),
 };
@@ -176,6 +187,9 @@ const InfiniteCanvasInner = ({
   const customNodeTypes = {
     custom: (props: any) => (
       <CustomNode {...props} onUpdateNode={handleUpdateNode} />
+    ),
+    freetext: (props: any) => (
+      <FreeTextNode {...props} onUpdateNode={handleUpdateNode} />
     ),
   };
 

@@ -249,10 +249,6 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      sync_existing_users: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
     }
     Enums: {
       admin_role: "super_admin" | "admin" | "moderator"

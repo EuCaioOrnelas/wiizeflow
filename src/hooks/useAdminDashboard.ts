@@ -13,6 +13,13 @@ interface AdminStats {
   projected_monthly_revenue: number;
 }
 
+interface CreateUserResponse {
+  success?: boolean;
+  error?: string;
+  user_id?: string;
+  message?: string;
+}
+
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,10 +34,11 @@ export const useAdminDashboard = () => {
   useEffect(() => {
     if (isAdmin) {
       loadDashboardStats();
-      syncExistingUsers();
+      checkExpiredSubscriptions();
       // Refresh stats every 30 seconds
       const interval = setInterval(() => {
         loadDashboardStats();
+        checkExpiredSubscriptions();
       }, 30000);
       return () => clearInterval(interval);
     } else if (loading === false && !isAdmin) {
@@ -51,7 +59,6 @@ export const useAdminDashboard = () => {
 
       console.log('Checking admin status for user:', user.email);
 
-      // Verificar primeiro se é o email admin
       if (user.email === 'adminwiize@wiizeflow.com.br') {
         console.log('Admin user detected by email');
         setIsAdmin(true);
@@ -59,7 +66,6 @@ export const useAdminDashboard = () => {
         return;
       }
 
-      // Verificar na tabela admin_users
       const { data: adminCheck, error } = await supabase
         .from('admin_users')
         .select('id, role')
@@ -68,14 +74,16 @@ export const useAdminDashboard = () => {
 
       console.log('Admin check result:', adminCheck, 'Error:', error);
 
-      if (error && user.email !== 'adminwiize@wiizeflow.com.br') {
+      if (error) {
         console.error('Error checking admin status:', error);
-        setLoading(false);
-        navigate('/admin-auth');
-        return;
+        if (user.email === 'adminwiize@wiizeflow.com.br') {
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
       }
 
-      setIsAdmin(!!adminCheck || user.email === 'adminwiize@wiizeflow.com.br');
+      setIsAdmin(!!adminCheck);
       setLoading(false);
 
       if (!adminCheck && user.email !== 'adminwiize@wiizeflow.com.br') {
@@ -102,75 +110,66 @@ export const useAdminDashboard = () => {
     }
   };
 
-  const syncExistingUsers = async () => {
+  const checkExpiredSubscriptions = async () => {
     try {
-      console.log('Syncing existing users...');
-      const { data, error } = await supabase.rpc('sync_existing_users');
+      console.log('Checking expired subscriptions...');
+      const { data, error } = await supabase.rpc('check_expired_subscriptions');
       
       if (error) {
-        console.error('Error syncing existing users:', error);
+        console.error('Error checking expired subscriptions:', error);
       } else if (data > 0) {
-        console.log(`Synced ${data} existing users to profiles table`);
+        console.log(`Updated ${data} expired subscriptions to free plan`);
       }
     } catch (error) {
-      console.error('Error syncing existing users:', error);
+      console.error('Error checking expired subscriptions:', error);
     }
   };
 
   const loadDashboardStats = async () => {
     try {
-      console.log('Loading dashboard stats...');
-
-      // Buscar todos os perfis
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, plan_type, subscription_status, subscription_expires_at, created_at');
+        .select('plan_type, subscription_status, subscription_expires_at');
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar dados dos usuários.",
-          variant: "destructive",
+        setStats({
+          online_users: 0,
+          total_users: 0,
+          free_users: 0,
+          monthly_users: 0,
+          annual_users: 0,
+          projected_monthly_revenue: 0,
         });
         return;
       }
 
-      console.log('Profiles loaded:', profiles?.length || 0);
+      // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
+      const activeProfiles = profiles?.filter(p => {
+        if (p.plan_type === 'free') return true;
+        if (p.subscription_status !== 'active') return false;
+        if (p.subscription_expires_at) {
+          return new Date(p.subscription_expires_at) > new Date();
+        }
+        return true;
+      }) || [];
 
-      // Buscar sessões ativas (últimos 15 minutos)
-      const { data: activeSessions, error: sessionsError } = await supabase
-        .from('user_sessions')
-        .select('user_id')
-        .gt('last_activity', new Date(Date.now() - 15 * 60 * 1000).toISOString());
-
-      if (sessionsError) {
-        console.error('Error loading sessions:', sessionsError);
-      }
-
-      const onlineUsers = activeSessions?.length || 0;
-      const allProfiles = profiles || [];
-      const totalUsers = allProfiles.length;
-
-      // Filtrar usuários por plano
-      const freeUsers = allProfiles.filter(p => p.plan_type === 'free').length;
-      const monthlyUsers = allProfiles.filter(p => p.plan_type === 'monthly').length;
-      const annualUsers = allProfiles.filter(p => p.plan_type === 'annual').length;
+      const totalUsers = profiles?.length || 0;
+      const freeUsers = activeProfiles.filter(p => p.plan_type === 'free').length;
+      const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
+      const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
       
-      // Calcular receita projetada (R$ 47,00 mensal e R$ 397,00 anual)
+      // Novos valores: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
       const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
 
-      const statsData = {
-        online_users: onlineUsers,
+      setStats({
+        online_users: 1,
         total_users: totalUsers,
         free_users: freeUsers,
         monthly_users: monthlyUsers,
         annual_users: annualUsers,
         projected_monthly_revenue: projectedRevenue,
-      };
-
-      console.log('Dashboard stats calculated:', statsData);
-      setStats(statsData);
+      });
 
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -184,93 +183,43 @@ export const useAdminDashboard = () => {
 
   const createUser = async (email: string, password: string, name: string, planType: string, subscriptionPeriod: string) => {
     try {
-      console.log('Creating new user:', { email, name, planType, subscriptionPeriod });
-
-      // Calcular data de expiração baseada no período
-      let expiresAt = null;
-      if (planType !== 'free') {
-        switch (subscriptionPeriod) {
-          case 'monthly':
-            expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-            break;
-          case 'annual':
-            expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-            break;
-          case 'lifetime':
-            expiresAt = null;
-            break;
-          default:
-            expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        }
-      }
-
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        user_metadata: {
-          name: name,
-          full_name: name
-        },
-        email_confirm: true
+      const { data, error } = await supabase.rpc('create_admin_user', {
+        user_email: email,
+        user_password: password,
+        user_name: name,
+        plan_type: planType,
+        subscription_period: subscriptionPeriod
       });
 
-      if (authError) {
-        console.error('Error creating auth user:', authError);
-        throw new Error(authError.message);
+      if (error) {
+        throw error;
       }
 
-      if (!authData.user) {
-        throw new Error('Falha ao criar usuário no sistema de autenticação');
+      // Type guard para verificar se data é um objeto com a propriedade error
+      const response = data as CreateUserResponse;
+
+      if (response?.error) {
+        throw new Error(response.error);
       }
-
-      console.log('Auth user created:', authData.user.id);
-
-      // Criar perfil do usuário na tabela profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: email,
-          name: name,
-          plan_type: planType,
-          subscription_status: planType === 'free' ? 'active' : 'active',
-          subscription_expires_at: expiresAt,
-          funnel_count: 0
-        });
-
-      if (profileError) {
-        console.error('Error creating user profile:', profileError);
-        // Se houver erro ao criar o perfil, tentar deletar o usuário de auth
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw new Error('Erro ao criar perfil do usuário: ' + profileError.message);
-      }
-
-      console.log('User profile created successfully');
 
       toast({
         title: "Sucesso",
-        description: `Usuário ${name} criado com sucesso!`,
+        description: "Usuário criado com sucesso!",
         variant: "default",
       });
 
-      // Recarregar estatísticas para refletir o novo usuário
-      await loadDashboardStats();
+      // Recarregar estatísticas
+      loadDashboardStats();
 
-      return { success: true, userId: authData.user.id };
-
+      return { success: true };
     } catch (error: any) {
       console.error('Error creating user:', error);
-      
-      const errorMessage = error.message || "Erro inesperado ao criar usuário";
-      
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: error.message || "Erro ao criar usuário.",
         variant: "destructive",
       });
-      
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 

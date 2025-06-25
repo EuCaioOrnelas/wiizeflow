@@ -33,15 +33,13 @@ const Auth = () => {
   useEffect(() => {
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth event:', event, 'Session:', session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && event === 'SIGNED_IN') {
-          // Garantir que o perfil do usuário existe no banco
-          await ensureUserProfile(session.user);
-          
+        if (session?.user) {
+          // Redirecionar para dashboard quando autenticado
           console.log('User authenticated, redirecting to dashboard');
           window.location.href = '/dashboard';
         }
@@ -49,15 +47,12 @@ const Auth = () => {
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Existing session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Garantir que o perfil do usuário existe no banco
-        await ensureUserProfile(session.user);
-        
         console.log('Existing session found, redirecting to dashboard');
         window.location.href = '/dashboard';
       }
@@ -65,46 +60,6 @@ const Auth = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const ensureUserProfile = async (user: User) => {
-    try {
-      console.log('Ensuring user profile exists for:', user.email);
-      
-      // Verificar se o perfil já existe
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      if (!existingProfile) {
-        console.log('Creating profile for user:', user.email);
-        
-        // Criar perfil se não existir
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-            plan_type: 'free',
-            funnel_count: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-        } else {
-          console.log('User profile created successfully');
-        }
-      } else {
-        console.log('User profile already exists');
-      }
-    } catch (error) {
-      console.error('Error ensuring user profile:', error);
-    }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,14 +144,13 @@ const Auth = () => {
       
       console.log('Using redirect URL:', redirectUrl);
       
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name: name,
-            full_name: name
+            name: name
           }
         }
       });
@@ -226,12 +180,6 @@ const Auth = () => {
       }
 
       console.log('Signup successful');
-      
-      // Se o usuário foi criado com sucesso, garantir que o perfil seja criado
-      if (data.user) {
-        await ensureUserProfile(data.user);
-      }
-      
       toast({
         title: "Conta criada com sucesso!",
         description: "Verifique seu email para confirmar sua conta e fazer login.",

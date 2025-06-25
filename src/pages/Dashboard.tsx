@@ -224,7 +224,7 @@ const Dashboard = () => {
   };
 
   const handleUpgrade = () => {
-    navigate('/pricing');
+    window.location.href = '/#pricing-section';
   };
 
   const handleAccount = () => {

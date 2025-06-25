@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -42,6 +41,7 @@ const Dashboard = () => {
   const [userName, setUserName] = useState<string>('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -172,6 +172,7 @@ const Dashboard = () => {
   };
 
   const deleteFunnel = async (funnelId: string) => {
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from('funnels')
@@ -203,6 +204,8 @@ const Dashboard = () => {
         description: "Erro inesperado ao deletar funil.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -443,6 +446,7 @@ const Dashboard = () => {
           }
         }}
         funnelName={funnelToDelete?.name || ''}
+        isDeleting={isDeleting}
       />
     </div>
   );

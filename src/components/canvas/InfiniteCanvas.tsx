@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -17,6 +16,7 @@ import {
   ReactFlowProvider,
   getNodesBounds,
   getViewportForBounds,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useToast } from '@/hooks/use-toast';
@@ -383,7 +383,7 @@ const InfiniteCanvasInner = ({
             maxZoom={4}
             attributionPosition="bottom-left"
             nodeOrigin={[0.5, 0.5]}
-            connectionMode="loose"
+            connectionMode={ConnectionMode.Loose}
           >
             <Controls />
             <MiniMap 

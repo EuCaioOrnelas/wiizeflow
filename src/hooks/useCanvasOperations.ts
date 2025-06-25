@@ -183,7 +183,7 @@ export const useCanvasOperations = ({
             data: { 
               ...node.data, 
               content,
-              hasContent: !!content && Object.keys(content).length > 0 && (content.title || content.description || (content.items && content.items.length > 0)),
+              hasContent: !!(content && Object.keys(content).length > 0 && (content.title || content.description || (content.items && content.items.length > 0))),
               ...(elementName && { label: elementName })
             }
           }

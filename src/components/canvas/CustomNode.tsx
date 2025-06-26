@@ -32,10 +32,12 @@ interface CustomNodeComponentProps extends NodeProps {
   data: CustomNodeData;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
   onOpenEditor?: (nodeId: string) => void;
+  isReadOnly?: boolean;
 }
 
-export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNodeComponentProps) => {
+export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly = false }: CustomNodeComponentProps) => {
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showContentPopup, setShowContentPopup] = useState(false);
   const [tempName, setTempName] = useState(data.label);
   const customizerRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +169,13 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
     setShowCustomizer(!showCustomizer);
   };
 
+  const handleNodeClick = (e: React.MouseEvent) => {
+    if (isReadOnly && hasRealContent) {
+      e.stopPropagation();
+      setShowContentPopup(true);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     setTempName(e.target.value);
@@ -266,7 +275,9 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
           px-5 py-4 rounded-lg border-2 shadow-md min-w-[304px] max-w-[512px]
           bg-white border-gray-300 text-gray-800 ${selectedClass}
           transition-all duration-200 hover:shadow-lg
+          ${isReadOnly && hasRealContent ? 'cursor-pointer' : ''}
         `}
+        onClick={handleNodeClick}
       >
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center space-x-2 flex-1">
@@ -280,62 +291,65 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
             </span>
           </div>
           
-          <div className="flex items-center space-x-1">
-            {/* Botão de edição */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
-              onClick={handleOpenEditor}
-            >
-              <Edit3 className="w-3 h-3" />
-            </Button>
-            
-            {/* Configurações */}
-            <Popover open={showCustomizer} onOpenChange={(open) => {
-              if (!open) {
-                setTempName(data.label);
-              }
-              setShowCustomizer(open);
-            }}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
-                  onClick={handleSettingsClick}
-                >
-                  <Settings className="w-3 h-3" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-80 p-4" 
-                side="top" 
-                align="end"
-                ref={customizerRef}
+          {/* Só mostra os botões de edição se não estiver em modo somente leitura */}
+          {!isReadOnly && (
+            <div className="flex items-center space-x-1">
+              {/* Botão de edição */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                onClick={handleOpenEditor}
               >
-                <form onSubmit={handleFormSubmit} className="space-y-4">
-                  {/* Campo para editar o nome */}
-                  <div>
-                    <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
-                    <div className="flex space-x-2 mt-1">
-                      <Input
-                        id="element-name"
-                        value={tempName}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        className="flex-1"
-                        placeholder="Nome do elemento"
-                      />
-                      <Button type="submit" size="sm">
-                        Salvar
-                      </Button>
+                <Edit3 className="w-3 h-3" />
+              </Button>
+              
+              {/* Configurações */}
+              <Popover open={showCustomizer} onOpenChange={(open) => {
+                if (!open) {
+                  setTempName(data.label);
+                }
+                setShowCustomizer(open);
+              }}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                    onClick={handleSettingsClick}
+                  >
+                    <Settings className="w-3 h-3" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-80 p-4" 
+                  side="top" 
+                  align="end"
+                  ref={customizerRef}
+                >
+                  <form onSubmit={handleFormSubmit} className="space-y-4">
+                    {/* Campo para editar o nome */}
+                    <div>
+                      <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
+                      <div className="flex space-x-2 mt-1">
+                        <Input
+                          id="element-name"
+                          value={tempName}
+                          onChange={handleInputChange}
+                          onKeyDown={handleInputKeyDown}
+                          className="flex-1"
+                          placeholder="Nome do elemento"
+                        />
+                        <Button type="submit" size="sm">
+                          Salvar
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </form>
-              </PopoverContent>
-            </Popover>
-          </div>
+                  </form>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         </div>
         
         <div className="text-xs opacity-75 capitalize mb-2">
@@ -370,6 +384,58 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNode
           </div>
         )}
       </div>
+
+      {/* Popup de conteúdo para modo somente leitura */}
+      {isReadOnly && hasRealContent && (
+        <Popover open={showContentPopup} onOpenChange={setShowContentPopup}>
+          <PopoverTrigger asChild>
+            <div style={{ display: 'none' }} />
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-4" side="top" align="center">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className={`w-5 h-5 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}>
+                  {getNodeIcon(data.type)}
+                </div>
+                <h3 className="font-medium text-sm">{data.label}</h3>
+              </div>
+              
+              {data.content && (
+                <div className="space-y-2">
+                  {data.content.title && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700">Título:</h4>
+                      <p className="text-sm text-gray-600">{data.content.title}</p>
+                    </div>
+                  )}
+                  
+                  {data.content.description && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700">Descrição:</h4>
+                      <p className="text-sm text-gray-600">{data.content.description}</p>
+                    </div>
+                  )}
+                  
+                  {data.content.items && data.content.items.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700">Itens:</h4>
+                      <ul className="space-y-1">
+                        {data.content.items.map((item, index) => (
+                          item.content && item.content.trim() !== '' && (
+                            <li key={index} className="text-sm text-gray-600">
+                              • {item.content}
+                            </li>
+                          )
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 });

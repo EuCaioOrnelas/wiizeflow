@@ -1,230 +1,376 @@
 
-import React, { memo, useState } from 'react';
-import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Pencil, Settings, Trash2, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { memo, useState, useRef } from 'react';
+import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
-import { ContentEditor } from './ContentEditor';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { 
+  Target, 
+  MousePointer, 
+  Mail, 
+  MessageCircle, 
+  ShoppingCart, 
+  Heart,
+  FileText,
+  Plus,
+  Settings,
+  Edit3,
+  TrendingUp,
+  TrendingDown,
+  Instagram,
+  Youtube,
+  Play,
+  Megaphone,
+  Building2,
+  Clock,
+  Phone
+} from 'lucide-react';
 
-interface CustomNodeProps {
-  id: string;
+interface CustomNodeComponentProps extends NodeProps {
   data: CustomNodeData;
-  selected?: boolean;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
-  isReadOnly?: boolean;
+  onOpenEditor?: (nodeId: string) => void;
 }
 
-export const CustomNode = memo(({ 
-  id, 
-  data, 
-  selected = false, 
-  onUpdateNode,
-  isReadOnly = false 
-}: CustomNodeProps) => {
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const { deleteElements, getNode } = useReactFlow();
+export const CustomNode = memo(({ id, data, selected, onUpdateNode }: CustomNodeComponentProps) => {
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [tempName, setTempName] = useState(data.label);
+  const customizerRef = useRef<HTMLDivElement>(null);
 
-  const handleDelete = () => {
-    if (isReadOnly) return;
-    deleteElements({ nodes: [{ id }] });
-  };
-
-  const handleDuplicate = () => {
-    if (isReadOnly || !onUpdateNode) return;
-    // Implementar lógica de duplicação
-  };
-
-  const handleEdit = () => {
-    if (isReadOnly) return;
-    setIsEditorOpen(true);
-  };
-
-  const handleNodeClick = () => {
-    // No modo de visualização, se o nó tem conteúdo, abrir o editor em modo somente leitura
-    if (isReadOnly && data.content && (data.content.text || data.content.items?.length > 0)) {
-      setIsEditorOpen(true);
-    }
-  };
-
-  const getBackgroundColor = () => {
-    switch (data.type) {
-      case 'landing-page':
-        return 'bg-blue-50 border-blue-200';
-      case 'email-capture':
-        return 'bg-green-50 border-green-200';
-      case 'sales-page':
-        return 'bg-yellow-50 border-yellow-200';
-      case 'checkout':
-        return 'bg-purple-50 border-purple-200';
-      case 'thank-you':
-        return 'bg-pink-50 border-pink-200';
+  const getNodeIcon = (type: string) => {
+    switch (type) {
+      case 'capture':
+        return <MousePointer className="w-4 h-4 text-white" />;
+      case 'sales':
+        return <Target className="w-4 h-4 text-white" />;
       case 'upsell':
-        return 'bg-orange-50 border-orange-200';
+        return <TrendingUp className="w-4 h-4 text-white" />;
       case 'downsell':
-        return 'bg-red-50 border-red-200';
-      case 'webinar':
-        return 'bg-indigo-50 border-indigo-200';
-      case 'survey':
-        return 'bg-teal-50 border-teal-200';
-      case 'video':
-        return 'bg-cyan-50 border-cyan-200';
-      default:
-        return 'bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getBadgeColor = () => {
-    switch (data.type) {
-      case 'landing-page':
-        return 'bg-blue-100 text-blue-800';
-      case 'email-capture':
-        return 'bg-green-100 text-green-800';
-      case 'sales-page':
-        return 'bg-yellow-100 text-yellow-800';
+        return <TrendingDown className="w-4 h-4 text-white" />;
+      case 'thankyou':
+        return <Heart className="w-4 h-4 text-white" />;
       case 'checkout':
-        return 'bg-purple-100 text-purple-800';
-      case 'thank-you':
-        return 'bg-pink-100 text-pink-800';
-      case 'upsell':
-        return 'bg-orange-100 text-orange-800';
-      case 'downsell':
-        return 'bg-red-100 text-red-800';
-      case 'webinar':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'survey':
-        return 'bg-teal-100 text-teal-800';
-      case 'video':
-        return 'bg-cyan-100 text-cyan-800';
+        return <ShoppingCart className="w-4 h-4 text-white" />;
+      case 'email':
+        return <Mail className="w-4 h-4 text-white" />;
+      case 'whatsapp':
+        return <MessageCircle className="w-4 h-4 text-white" />;
+      case 'sms':
+        return <MessageCircle className="w-4 h-4 text-white" />;
+      case 'call':
+        return <Phone className="w-4 h-4 text-white" />;
+      case 'dminstagram':
+        return <Instagram className="w-4 h-4 text-white" />;
+      case 'instagram':
+        return <Instagram className="w-4 h-4 text-white" />;
+      case 'youtube':
+        return <Youtube className="w-4 h-4 text-white" />;
+      case 'tiktok':
+        return <Play className="w-4 h-4 text-white" />;
+      case 'metaads':
+        return <Megaphone className="w-4 h-4 text-white" />;
+      case 'googleads':
+        return <Target className="w-4 h-4 text-white" />;
+      case 'blog':
+        return <FileText className="w-4 h-4 text-white" />;
+      case 'googlebusiness':
+        return <Building2 className="w-4 h-4 text-white" />;
+      case 'text':
+        return <FileText className="w-4 h-4 text-white" />;
+      case 'wait':
+        return <Clock className="w-4 h-4 text-white" />;
+      case 'other':
+        return <Plus className="w-4 h-4 text-white" />;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return <FileText className="w-4 h-4 text-white" />;
     }
   };
 
-  const getTypeDisplayName = () => {
-    const typeNames = {
-      'landing-page': 'Landing Page',
-      'email-capture': 'Captura de Email',
-      'sales-page': 'Página de Vendas',
-      'checkout': 'Checkout',
-      'thank-you': 'Obrigado',
-      'upsell': 'Upsell',
-      'downsell': 'Downsell',
-      'webinar': 'Webinar',
-      'survey': 'Pesquisa',
-      'video': 'Vídeo',
-    };
-    return typeNames[data.type] || data.type;
+  const getIconBackgroundColor = (type: string) => {
+    switch (type) {
+      case 'capture':
+        return 'bg-blue-500';
+      case 'sales':
+        return 'bg-green-500';
+      case 'upsell':
+        return 'bg-emerald-500';
+      case 'downsell':
+        return 'bg-orange-500';
+      case 'thankyou':
+        return 'bg-purple-500';
+      case 'checkout':
+        return 'bg-red-500';
+      case 'email':
+        return 'bg-yellow-500';
+      case 'whatsapp':
+        return 'bg-green-600';
+      case 'sms':
+        return 'bg-blue-400';
+      case 'call':
+        return 'bg-indigo-500';
+      case 'dminstagram':
+        return 'bg-pink-400';
+      case 'instagram':
+        return 'bg-pink-500';
+      case 'youtube':
+        return 'bg-red-600';
+      case 'tiktok':
+        return 'bg-black';
+      case 'metaads':
+        return 'bg-blue-600';
+      case 'googleads':
+        return 'bg-yellow-500';
+      case 'blog':
+        return 'bg-slate-600';
+      case 'googlebusiness':
+        return 'bg-green-600';
+      case 'text':
+        return 'bg-indigo-500';
+      case 'wait':
+        return 'bg-amber-500';
+      case 'other':
+        return 'bg-gray-500';
+      default:
+        return 'bg-gray-500';
+    }
   };
 
-  const hasContent = data.content && (data.content.text || data.content.items?.length > 0);
+  const handleNameSave = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (onUpdateNode && tempName.trim() && tempName.trim() !== data.label) {
+      onUpdateNode(id, { label: tempName.trim() });
+    }
+    setShowCustomizer(false);
+  };
+
+  const handleOpenEditor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Trigger double click event to open content editor
+    const event = new MouseEvent('dblclick', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+    });
+    e.currentTarget.parentElement?.dispatchEvent(event);
+  };
+
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setTempName(data.label);
+    setShowCustomizer(!showCustomizer);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    setTempName(e.target.value);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setTempName(data.label);
+      setShowCustomizer(false);
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleNameSave(e);
+  };
+
+  // Verificar se há conteúdo real usando a estrutura correta do NodeContent
+  const hasRealContent = data.content && (
+    (data.content.title && data.content.title.trim() !== '') ||
+    (data.content.description && data.content.description.trim() !== '') ||
+    (data.content.items && data.content.items.length > 0 && 
+     data.content.items.some(item => item.content && item.content.trim() !== ''))
+  );
+
+  const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg' : '';
+  const iconBgClass = getIconBackgroundColor(data.type);
 
   return (
-    <>
-      <Card 
-        className={cn(
-          'min-w-[200px] max-w-[250px] shadow-md transition-all duration-200',
-          getBackgroundColor(),
-          selected && 'ring-2 ring-blue-500',
-          isReadOnly && hasContent && 'cursor-pointer hover:shadow-lg'
-        )}
-        onClick={handleNodeClick}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <Badge className={cn('text-xs font-medium', getBadgeColor())}>
-              {getTypeDisplayName()}
-            </Badge>
-            
-            {/* Botões de ação - apenas no modo de edição */}
-            {!isReadOnly && (
-              <div className="flex items-center space-x-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="p-1 h-6 w-6 hover:bg-white/80"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit();
-                  }}
-                >
-                  <Pencil className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="p-1 h-6 w-6 hover:bg-white/80"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Implementar configurações
-                  }}
-                >
-                  <Settings className="w-3 h-3" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Nome do elemento */}
-          <div className="mb-2">
-            <h3 className="font-medium text-sm text-gray-900 break-words">
-              {data.elementName || getTypeDisplayName()}
-            </h3>
-          </div>
-
-          {/* Preview do conteúdo */}
-          {data.content?.text && (
-            <div className="text-xs text-gray-600 line-clamp-2 mb-2">
-              {data.content.text.substring(0, 100)}...
-            </div>
-          )}
-
-          {/* Indicador de conteúdo no modo de visualização */}
-          {isReadOnly && hasContent && (
-            <div className="text-xs text-blue-600 font-medium">
-              Clique para ver conteúdo
-            </div>
-          )}
-
-          {/* Métricas básicas */}
-          {data.metrics && (
-            <div className="flex justify-between text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-              <span>Conversão: {data.metrics.conversionRate}%</span>
-              <span>Visitas: {data.metrics.visits}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Handles de conexão */}
+    <div className={`relative ${selectedClass}`}>
+      {/* Handles nas 4 direções */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-blue-500 !border-2 !border-white"
+        id="top-target"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ top: -3 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ top: -3 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left-target"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ left: -3 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ left: -3 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="right-target"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ right: -3 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ right: -3 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-target"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ bottom: -3 }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-blue-500 !border-2 !border-white"
+        id="bottom"
+        className="w-1.5 h-1.5 !bg-gray-400 !border-gray-600 opacity-0 hover:opacity-60"
+        style={{ bottom: -3 }}
       />
+      
+      <div 
+        className={`
+          px-5 py-4 rounded-lg border-2 shadow-md min-w-[304px] max-w-[512px]
+          bg-white border-gray-300 text-gray-800 ${selectedClass}
+          transition-all duration-200 hover:shadow-lg
+        `}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center space-x-2 flex-1">
+            <div 
+              className={`w-6 h-6 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}
+            >
+              {getNodeIcon(data.type)}
+            </div>
+            <span className="font-medium text-sm select-none">
+              {data.label}
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-1">
+            {/* Botão de edição */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+              onClick={handleOpenEditor}
+            >
+              <Edit3 className="w-3 h-3" />
+            </Button>
+            
+            {/* Configurações */}
+            <Popover open={showCustomizer} onOpenChange={(open) => {
+              if (!open) {
+                setTempName(data.label);
+              }
+              setShowCustomizer(open);
+            }}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                  onClick={handleSettingsClick}
+                >
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-80 p-4" 
+                side="top" 
+                align="end"
+                ref={customizerRef}
+              >
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  {/* Campo para editar o nome */}
+                  <div>
+                    <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
+                    <div className="flex space-x-2 mt-1">
+                      <Input
+                        id="element-name"
+                        value={tempName}
+                        onChange={handleInputChange}
+                        onKeyDown={handleInputKeyDown}
+                        className="flex-1"
+                        placeholder="Nome do elemento"
+                      />
+                      <Button type="submit" size="sm">
+                        Salvar
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        
+        <div className="text-xs opacity-75 capitalize mb-2">
+          {data.type === 'capture' ? 'Captura' : 
+           data.type === 'sales' ? 'Vendas' :
+           data.type === 'upsell' ? 'Upsell' :
+           data.type === 'downsell' ? 'Downsell' :
+           data.type === 'thankyou' ? 'Obrigado' :
+           data.type === 'checkout' ? 'Checkout' :
+           data.type === 'email' ? 'E-mail' :
+           data.type === 'whatsapp' ? 'WhatsApp' :
+           data.type === 'sms' ? 'SMS' :
+           data.type === 'call' ? 'Ligação' :
+           data.type === 'dminstagram' ? 'DM Instagram' :
+           data.type === 'instagram' ? 'Instagram' :
+           data.type === 'youtube' ? 'Youtube' :
+           data.type === 'tiktok' ? 'Tik Tok' :
+           data.type === 'metaads' ? 'Meta Ads' :
+           data.type === 'googleads' ? 'Google Ads' :
+           data.type === 'blog' ? 'Blog' :
+           data.type === 'googlebusiness' ? 'Google meu negócio' :
+           data.type === 'text' ? 'Anotação' :
+           data.type === 'wait' ? 'Tempo de espera' :
+           data.type === 'other' ? 'Customizado' : data.type}
+        </div>
 
-      {/* Content Editor */}
-      {isEditorOpen && (
-        <ContentEditor
-          node={{ id, data, position: { x: 0, y: 0 }, type: 'custom' }}
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          onSave={isReadOnly ? undefined : (content, elementName) => {
-            if (onUpdateNode) {
-              onUpdateNode(id, { content, elementName });
-            }
-          }}
-          isReadOnly={isReadOnly}
-        />
-      )}
-    </>
+        {hasRealContent && (
+          <div className="text-xs bg-gray-100 rounded p-1 mt-2">
+            {data.content && data.content.title && (
+              <div className="font-medium truncate">{data.content.title}</div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 });
 

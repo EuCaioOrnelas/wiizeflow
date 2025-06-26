@@ -27,7 +27,8 @@ interface AdvancedContentEditorProps {
   node: Node<CustomNodeData>;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (content: NodeContent, elementName?: string) => void;
+  onSave?: (content: NodeContent, elementName?: string) => void;
+  isReadOnly?: boolean;
 }
 
 interface ContentBlock {
@@ -44,7 +45,7 @@ interface ContentBlock {
   items?: { id: string; text: string; checked?: boolean }[];
 }
 
-export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: AdvancedContentEditorProps) => {
+export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave, isReadOnly = false }: AdvancedContentEditorProps) => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [elementName, setElementName] = useState('');
@@ -61,9 +62,11 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
     setElementName(node.data.label || '');
   }, [node]);
 
-  // Atalhos de teclado
+  // Atalhos de teclado (apenas no modo de edição)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isReadOnly) return;
+      
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 'b':
@@ -86,16 +89,18 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
       }
     };
 
-    if (isOpen) {
+    if (isOpen && !isReadOnly) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, activeBlock]);
+  }, [isOpen, activeBlock, isReadOnly]);
 
   const addBlock = useCallback((type: ContentBlock['type']) => {
+    if (isReadOnly) return;
+    
     const newBlock: ContentBlock = {
       id: Date.now().toString(),
       type,
@@ -109,21 +114,25 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
 
     setBlocks(prev => [...prev, newBlock]);
     setActiveBlock(newBlock.id);
-  }, []);
+  }, [isReadOnly]);
 
   const updateBlock = useCallback((id: string, updates: Partial<ContentBlock>) => {
+    if (isReadOnly) return;
+    
     setBlocks(prev => prev.map(block => 
       block.id === id ? { ...block, ...updates } : block
     ));
-  }, []);
+  }, [isReadOnly]);
 
   const removeBlock = useCallback((id: string) => {
+    if (isReadOnly) return;
+    
     setBlocks(prev => prev.filter(block => block.id !== id));
     setActiveBlock(null);
-  }, []);
+  }, [isReadOnly]);
 
   const toggleStyle = useCallback((styleType: 'bold' | 'italic' | 'underline' | 'highlight') => {
-    if (activeBlock) {
+    if (activeBlock && !isReadOnly) {
       updateBlock(activeBlock, {
         style: {
           ...blocks.find(b => b.id === activeBlock)?.style,
@@ -131,9 +140,11 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
         }
       });
     }
-  }, [activeBlock, blocks, updateBlock]);
+  }, [activeBlock, blocks, updateBlock, isReadOnly]);
 
   const addListItem = useCallback((blockId: string) => {
+    if (isReadOnly) return;
+    
     const block = blocks.find(b => b.id === blockId);
     if (block && (block.type === 'list' || block.type === 'checklist')) {
       updateBlock(blockId, {
@@ -147,9 +158,11 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
         ]
       });
     }
-  }, [blocks, updateBlock]);
+  }, [blocks, updateBlock, isReadOnly]);
 
   const updateListItem = useCallback((blockId: string, itemId: string, text: string) => {
+    if (isReadOnly) return;
+    
     const block = blocks.find(b => b.id === blockId);
     if (block) {
       updateBlock(blockId, {
@@ -158,9 +171,11 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
         )
       });
     }
-  }, [blocks, updateBlock]);
+  }, [blocks, updateBlock, isReadOnly]);
 
   const toggleChecklistItem = useCallback((blockId: string, itemId: string) => {
+    if (isReadOnly) return;
+    
     const block = blocks.find(b => b.id === blockId);
     if (block && block.type === 'checklist') {
       updateBlock(blockId, {
@@ -169,9 +184,11 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
         )
       });
     }
-  }, [blocks, updateBlock]);
+  }, [blocks, updateBlock, isReadOnly]);
 
   const handleSave = useCallback(() => {
+    if (isReadOnly || !onSave) return;
+    
     const content: NodeContent = {
       title,
       description: '', // Mantido para compatibilidade
@@ -184,7 +201,7 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
       description: "As alterações foram salvas com sucesso.",
     });
     onClose();
-  }, [title, blocks, elementName, onSave, onClose, toast]);
+  }, [title, blocks, elementName, onSave, onClose, toast, isReadOnly]);
 
   const getBlockStyle = (block: ContentBlock) => {
     const style: React.CSSProperties = {};
@@ -198,8 +215,10 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
   const renderBlock = (block: ContentBlock) => {
     const commonProps = {
       style: getBlockStyle(block),
-      onFocus: () => setActiveBlock(block.id),
+      onFocus: () => !isReadOnly && setActiveBlock(block.id),
       onBlur: () => setActiveBlock(null),
+      readOnly: isReadOnly,
+      disabled: isReadOnly,
     };
 
     switch (block.type) {
@@ -266,6 +285,8 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
               onChange={(e) => updateBlock(block.id, { url: e.target.value })}
               placeholder="URL do link..."
               className="text-sm text-blue-600 border-none p-0 focus-visible:ring-0"
+              readOnly={isReadOnly}
+              disabled={isReadOnly}
             />
           </div>
         );
@@ -282,6 +303,7 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
                     checked={item.checked || false}
                     onChange={() => toggleChecklistItem(block.id, item.id)}
                     className="rounded"
+                    disabled={isReadOnly}
                   />
                 )}
                 {block.type === 'list' && (
@@ -293,17 +315,21 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
                   placeholder="Item da lista..."
                   className="border-none p-0 focus-visible:ring-0"
                   style={block.type === 'checklist' && item.checked ? { textDecoration: 'line-through', opacity: 0.6 } : {}}
+                  readOnly={isReadOnly}
+                  disabled={isReadOnly}
                 />
               </div>
             ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addListItem(block.id)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              + Adicionar item
-            </Button>
+            {!isReadOnly && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => addListItem(block.id)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                + Adicionar item
+              </Button>
+            )}
           </div>
         );
       
@@ -318,7 +344,9 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
         {/* Header */}
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center justify-between">
-            <span>Editor de Conteúdo - {elementName}</span>
+            <span>
+              {isReadOnly ? 'Visualizar Conteúdo' : 'Editor de Conteúdo'} - {elementName}
+            </span>
             <Button
               variant="ghost"
               size="sm"
@@ -330,78 +358,82 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
           </DialogTitle>
         </DialogHeader>
 
-        {/* Element Name Section */}
-        <div className="px-6 py-2 border-b">
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium">Nome do Elemento:</label>
-            <Input
-              value={elementName}
-              onChange={(e) => setElementName(e.target.value)}
-              placeholder="Nome do elemento"
-              className="flex-1 max-w-xs"
-            />
+        {/* Element Name Section (apenas no modo de edição) */}
+        {!isReadOnly && (
+          <div className="px-6 py-2 border-b">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium">Nome do Elemento:</label>
+              <Input
+                value={elementName}
+                onChange={(e) => setElementName(e.target.value)}
+                placeholder="Nome do elemento"
+                className="flex-1 max-w-xs"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Toolbar */}
-        <div className="px-6 py-2 border-b flex items-center space-x-2 flex-wrap">
-          <Button variant="ghost" size="sm" onClick={() => addBlock('h1')}>
-            <Heading1 className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('h2')}>
-            <Heading2 className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('subtitle')}>
-            <Type className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('paragraph')}>
-            Parágrafo
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('list')}>
-            <List className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('checklist')}>
-            <CheckSquare className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => addBlock('link')}>
-            <Link className="w-4 h-4" />
-          </Button>
+        {/* Toolbar (apenas no modo de edição) */}
+        {!isReadOnly && (
+          <div className="px-6 py-2 border-b flex items-center space-x-2 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => addBlock('h1')}>
+              <Heading1 className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('h2')}>
+              <Heading2 className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('subtitle')}>
+              <Type className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('paragraph')}>
+              Parágrafo
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('list')}>
+              <List className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('checklist')}>
+              <CheckSquare className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addBlock('link')}>
+              <Link className="w-4 h-4" />
+            </Button>
 
-          <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6" />
 
-          <Button 
-            variant={blocks.find(b => b.id === activeBlock)?.style?.bold ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => toggleStyle('bold')}
-            disabled={!activeBlock}
-          >
-            <Bold className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant={blocks.find(b => b.id === activeBlock)?.style?.italic ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => toggleStyle('italic')}
-            disabled={!activeBlock}
-          >
-            <Italic className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant={blocks.find(b => b.id === activeBlock)?.style?.underline ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => toggleStyle('underline')}
-            disabled={!activeBlock}
-          >
-            <Underline className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant={blocks.find(b => b.id === activeBlock)?.style?.highlight ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => toggleStyle('highlight')}
-            disabled={!activeBlock}
-          >
-            <Highlighter className="w-4 h-4" />
-          </Button>
-        </div>
+            <Button 
+              variant={blocks.find(b => b.id === activeBlock)?.style?.bold ? "default" : "ghost"} 
+              size="sm" 
+              onClick={() => toggleStyle('bold')}
+              disabled={!activeBlock}
+            >
+              <Bold className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant={blocks.find(b => b.id === activeBlock)?.style?.italic ? "default" : "ghost"} 
+              size="sm" 
+              onClick={() => toggleStyle('italic')}
+              disabled={!activeBlock}
+            >
+              <Italic className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant={blocks.find(b => b.id === activeBlock)?.style?.underline ? "default" : "ghost"} 
+              size="sm" 
+              onClick={() => toggleStyle('underline')}
+              disabled={!activeBlock}
+            >
+              <Underline className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant={blocks.find(b => b.id === activeBlock)?.style?.highlight ? "default" : "ghost"} 
+              size="sm" 
+              onClick={() => toggleStyle('highlight')}
+              disabled={!activeBlock}
+            >
+              <Highlighter className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
 
         {/* Editor Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={editorRef}>
@@ -411,6 +443,8 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título do documento..."
             className="text-3xl font-bold border-none p-0 focus-visible:ring-0"
+            readOnly={isReadOnly}
+            disabled={isReadOnly}
           />
 
           <Separator />
@@ -418,24 +452,26 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
           {/* Content Blocks */}
           <div className="space-y-4">
             {blocks.map((block, index) => (
-              <div key={block.id} className="group relative">
-                <div className="absolute -left-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeBlock(block.id)}
-                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
+              <div key={block.id} className={`group relative ${!isReadOnly ? 'hover:bg-gray-50' : ''}`}>
+                {!isReadOnly && (
+                  <div className="absolute -left-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBlock(block.id)}
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
                 {renderBlock(block)}
               </div>
             ))}
           </div>
 
-          {/* Add Block Button */}
-          {blocks.length === 0 && (
+          {/* Add Block Button (apenas no modo de edição) */}
+          {blocks.length === 0 && !isReadOnly && (
             <div className="text-center py-8 text-gray-500">
               <p className="mb-4">Comece adicionando um bloco de conteúdo</p>
               <div className="flex justify-center space-x-2">
@@ -454,17 +490,21 @@ export const AdvancedContentEditor = ({ node, isOpen, onClose, onSave }: Advance
 
         {/* Footer */}
         <div className="p-6 pt-0 flex justify-between items-center border-t">
-          <div className="text-sm text-gray-500">
-            Atalhos: Ctrl+B (negrito), Ctrl+I (itálico), Ctrl+U (sublinhado), Ctrl+S (salvar)
-          </div>
-          <div className="flex space-x-2">
+          {!isReadOnly && (
+            <div className="text-sm text-gray-500">
+              Atalhos: Ctrl+B (negrito), Ctrl+I (itálico), Ctrl+U (sublinhado), Ctrl+S (salvar)
+            </div>
+          )}
+          <div className="flex space-x-2 ml-auto">
             <Button variant="outline" onClick={onClose}>
-              Cancelar
+              {isReadOnly ? 'Fechar' : 'Cancelar'}
             </Button>
-            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-              <Save className="w-4 h-4 mr-2" />
-              Salvar
-            </Button>
+            {!isReadOnly && onSave && (
+              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+                <Save className="w-4 h-4 mr-2" />
+                Salvar
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

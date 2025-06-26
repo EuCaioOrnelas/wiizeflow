@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -109,9 +110,10 @@ const SharedFunnel = () => {
       let canvasData = { nodes: [], edges: [] };
       if (funnel.canvas_data && typeof funnel.canvas_data === 'object') {
         try {
-          // Type assertion since we know the structure from our database
-          const parsedData = funnel.canvas_data as { nodes: Node<CustomNodeData>[]; edges: Edge[] };
-          if (Array.isArray(parsedData.nodes) && Array.isArray(parsedData.edges)) {
+          // Convert from Json type to our expected type structure
+          const rawData = funnel.canvas_data as unknown;
+          const parsedData = rawData as { nodes: Node<CustomNodeData>[]; edges: Edge[] };
+          if (parsedData && Array.isArray(parsedData.nodes) && Array.isArray(parsedData.edges)) {
             canvasData = parsedData;
           }
         } catch (error) {
@@ -223,9 +225,9 @@ const SharedFunnel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
       {/* Header com informações do funil */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
@@ -259,8 +261,8 @@ const SharedFunnel = () => {
         </div>
       </div>
 
-      {/* Canvas em modo somente leitura */}
-      <div className="flex-1 h-[calc(100vh-80px)]">
+      {/* Canvas em modo somente leitura - ocupa o espaço restante sem scroll */}
+      <div className="flex-1 overflow-hidden">
         <InfiniteCanvas
           funnelId={funnelData.id}
           funnelName={funnelData.name}

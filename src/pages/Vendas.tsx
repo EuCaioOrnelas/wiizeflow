@@ -46,45 +46,50 @@ const Vendas = () => {
       period: "/mês",
       description: "Perfeito para começar",
       features: [
-        "Até 3 funis",
+        "Até 2 funis",
         "Elementos básicos",
-        "Exportação em PNG",
+        "Compartilhamento por Link",
         "Suporte por email"
       ],
       buttonText: "Começar Grátis",
       highlighted: false
     },
     {
-      name: "Pro",
-      price: "R$ 29",
+      name: "Mensal",
+      price: "R$ 47",
       period: "/mês",
       description: "Para profissionais",
       features: [
         "Funis ilimitados",
         "Todos os elementos",
-        "Exportação PDF/PNG",
-        "Templates premium",
-        "Suporte prioritário",
-        "Integração com ferramentas"
+        "Compartilhamento por Link",
+        "Sistema de Templates",
+        "Suporte prioritário via WhatsApp",
+        "Integração com ferramentas",
+        "Sistema de Trackeamento (Em breve)"
       ],
-      buttonText: "Assinar Pro",
-      highlighted: true
+      buttonText: "Assinar Mensal",
+      highlighted: false
     },
     {
-      name: "Enterprise",
-      price: "R$ 299",
+      name: "Anual",
+      price: "R$ 329",
+      originalPrice: "R$ 470",
       period: "/ano",
-      description: "Melhor valor - 2 meses grátis",
+      description: "30% OFF - Melhor valor",
+      discount: "30% OFF",
       features: [
-        "Tudo do Pro",
-        "White label",
-        "API personalizada",
-        "Suporte 24/7",
-        "Consultoria inclusa",
-        "Onboarding personalizado"
+        "Funis ilimitados",
+        "Todos os elementos",
+        "Compartilhamento por Link",
+        "Sistema de Templates",
+        "Suporte prioritário via WhatsApp",
+        "Integração com ferramentas",
+        "Sistema de Trackeamento (Em breve)",
+        "Economia de 30%"
       ],
-      buttonText: "Assinar Enterprise",
-      highlighted: false
+      buttonText: "Assinar Anual",
+      highlighted: true
     }
   ];
 
@@ -175,26 +180,31 @@ const Vendas = () => {
       {/* Hero Section */}
       <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F4FDF9' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{ color: '#2B2D42' }}>
-              Transforme suas ideias em um
-              <span className="block" style={{ color: '#06D6A0' }}>funil visual profissional</span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-gray-600 max-w-3xl mx-auto font-light">
-              Visualize. Construa. Converta.
-            </p>
-            <Button 
-              size="lg"
-              onClick={() => navigate('/auth')}
-              style={{ backgroundColor: '#06D6A0' }}
-              className="hover:bg-yellow-400 transition-colors text-lg px-8 py-3"
-            >
-              Comece gratuitamente agora
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{ color: '#2B2D42' }}>
+                Transforme suas ideias em um
+                <span className="block" style={{ color: '#06D6A0' }}>funil visual profissional</span>
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-gray-600 max-w-3xl font-light">
+                Visualize. Construa. Converta.
+              </p>
+              <Button 
+                size="lg"
+                onClick={() => navigate('/auth')}
+                style={{ backgroundColor: '#06D6A0' }}
+                className="hover:bg-yellow-400 transition-colors text-lg px-8 py-3 mb-4"
+              >
+                Comece gratuitamente agora
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <p className="text-sm text-gray-500">
+                Sem cartão de crédito • Configuração em 2 minutos • Suporte em português
+              </p>
+            </div>
             
             {/* Hero Image */}
-            <div className="mt-16 max-w-5xl mx-auto">
+            <div className="lg:order-last">
               <div className="bg-white rounded-lg shadow-2xl p-4">
                 <img 
                   src="/lovable-uploads/7c4b2ed5-41bf-433e-9d68-b3e7b35f7ae1.png" 
@@ -591,9 +601,22 @@ const Vendas = () => {
                     MAIS POPULAR
                   </div>
                 )}
+                {plan.discount && (
+                  <div 
+                    className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-white text-xs font-bold"
+                    style={{ backgroundColor: '#FFD166', color: '#2B2D42' }}
+                  >
+                    {plan.discount}
+                  </div>
+                )}
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
                   <div className="mb-4">
+                    {plan.originalPrice && (
+                      <div className="text-sm text-gray-500 line-through mb-1">
+                        De {plan.originalPrice}
+                      </div>
+                    )}
                     <span className="text-4xl font-bold">{plan.price}</span>
                     <span className="text-gray-600">{plan.period}</span>
                   </div>
@@ -686,7 +709,7 @@ const Vendas = () => {
             {[
               {
                 question: "O WiizeFlow é realmente gratuito?",
-                answer: "Sim! Oferecemos um plano gratuito permanente que permite criar até 3 funis com elementos básicos. É perfeito para começar e testar a ferramenta."
+                answer: "Sim! Oferecemos um plano gratuito permanente que permite criar até 2 funis com elementos básicos. É perfeito para começar e testar a ferramenta."
               },
               {
                 question: "Preciso de conhecimento técnico para usar?",
@@ -698,11 +721,11 @@ const Vendas = () => {
               },
               {
                 question: "Como funciona o suporte ao cliente?",
-                answer: "Oferecemos suporte em português por email para todos os usuários. Usuários pagos têm prioridade e acesso ao suporte por chat."
+                answer: "Oferecemos suporte em português por email para todos os usuários. Usuários pagos têm prioridade e acesso ao suporte prioritário via WhatsApp."
               },
               {
                 question: "Posso exportar meus funis?",
-                answer: "Sim! Você pode exportar seus funis em PNG (todos os planos) e PDF (planos pagos). Também é possível compartilhar links para visualização."
+                answer: "Sim! Você pode compartilhar seus funis por link em todos os planos. Usuários pagos também têm acesso ao sistema de templates e integração com ferramentas."
               },
               {
                 question: "Os dados ficam seguros?",

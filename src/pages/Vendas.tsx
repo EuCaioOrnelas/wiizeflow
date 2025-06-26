@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, Target, Users, Zap, TrendingUp, Shield, Globe, MessageCircle, Template, BarChart3, Share2, DollarSign, Brain, Play, Menu, Crown } from "lucide-react";
+import { Check, X, Target, Users, Zap, TrendingUp, Shield, Globe, MessageCircle, LayoutTemplate, BarChart3, Share2, DollarSign, Brain, Play, Menu, Crown } from "lucide-react";
 import { usePayment } from "@/hooks/usePayment";
 import { useState } from "react";
 import EmailCaptureDialog from "@/components/EmailCaptureDialog";
@@ -303,7 +303,11 @@ const Vendas = () => {
                   border-radius: 12px;
                 }`}
               </style>
-              <wistia-player media-id="ueahsngyvm" aspect="1.7777777777777777" className="rounded-xl"></wistia-player>
+              <div 
+                dangerouslySetInnerHTML={{
+                  __html: '<wistia-player media-id="ueahsngyvm" aspect="1.7777777777777777" class="rounded-xl"></wistia-player>'
+                }}
+              />
             </div>
           </div>
         </div>
@@ -373,7 +377,7 @@ const Vendas = () => {
               { icon: Globe, title: "100% Brasileira", desc: "Plataforma desenvolvida no Brasil" },
               { icon: MessageCircle, title: "Suporte em Português", desc: "Atendimento especializado" },
               { icon: Target, title: "Exclusiva para Funis", desc: "Focada em mapas mentais e funis" },
-              { icon: Template, title: "Templates Prontos", desc: "Modelos otimizados para conversão" },
+              { icon: LayoutTemplate, title: "Templates Prontos", desc: "Modelos otimizados para conversão" },
               { icon: BarChart3, title: "Sistema de Tracking", desc: "Rastreamento inteligente (em breve)" },
               { icon: Share2, title: "Compartilhamento", desc: "Colaboração com terceiros" },
               { icon: DollarSign, title: "Acessível", desc: "Preço justo para qualquer negócio" },

@@ -1,14 +1,10 @@
+
 import { Node, Edge } from '@xyflow/react';
 
 export interface NodeContent {
   title?: string;
   description?: string;
   items?: any[];
-}
-
-export interface NodeMetrics {
-  conversionRate: number;
-  visits: number;
 }
 
 export interface CustomNodeData extends Record<string, unknown> {
@@ -19,8 +15,6 @@ export interface CustomNodeData extends Record<string, unknown> {
   customIcon?: string; // For emoji
   customColor?: string; // For icon background color
   nodeColor?: string; // For node background color
-  elementName?: string;
-  metrics?: NodeMetrics;
 }
 
 export interface CanvasState {

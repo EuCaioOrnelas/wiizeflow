@@ -1,3 +1,4 @@
+
 import React, { memo, useState } from 'react';
 import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -43,7 +44,7 @@ export const CustomNode = memo(({
 
   const handleNodeClick = () => {
     // No modo de visualização, se o nó tem conteúdo, abrir o editor em modo somente leitura
-    if (isReadOnly && data.content && (data.content.title || data.content.description || data.content.items?.length > 0)) {
+    if (isReadOnly && data.content && (data.content.text || data.content.items?.length > 0)) {
       setIsEditorOpen(true);
     }
   };
@@ -118,7 +119,7 @@ export const CustomNode = memo(({
     return typeNames[data.type] || data.type;
   };
 
-  const hasContent = data.content && (data.content.title || data.content.description || data.content.items?.length > 0);
+  const hasContent = data.content && (data.content.text || data.content.items?.length > 0);
 
   return (
     <>
@@ -174,15 +175,9 @@ export const CustomNode = memo(({
           </div>
 
           {/* Preview do conteúdo */}
-          {data.content?.title && (
+          {data.content?.text && (
             <div className="text-xs text-gray-600 line-clamp-2 mb-2">
-              {data.content.title.substring(0, 100)}...
-            </div>
-          )}
-
-          {data.content?.description && (
-            <div className="text-xs text-gray-600 line-clamp-2 mb-2">
-              {data.content.description.substring(0, 100)}...
+              {data.content.text.substring(0, 100)}...
             </div>
           )}
 

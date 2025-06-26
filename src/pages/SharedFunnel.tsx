@@ -51,25 +51,25 @@ const SharedFunnel = () => {
     }
 
     try {
-      // Buscar dados do compartilhamento
+      console.log('Loading shared funnel with token:', shareToken);
+
+      // Buscar dados do compartilhamento com join das tabelas relacionadas
       const { data: shareData, error: shareError } = await supabase
         .from('funnel_shares')
         .select(`
           funnel_id,
           allow_download,
-          funnels (
+          funnels!inner (
             id,
             name,
             canvas_data,
-            profiles (
-              name
-            )
+            user_id
           )
         `)
         .eq('share_token', shareToken)
         .single();
 
-      if (shareError || !shareData) {
+      if (shareError) {
         console.error('Error loading shared funnel:', shareError);
         toast({
           title: "Funil não encontrado",
@@ -80,13 +80,37 @@ const SharedFunnel = () => {
         return;
       }
 
-      const funnel = shareData.funnels as any;
-      
+      if (!shareData || !shareData.funnels) {
+        console.error('No funnel data found');
+        toast({
+          title: "Funil não encontrado",
+          description: "O funil compartilhado não foi encontrado.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      const funnel = shareData.funnels;
+      console.log('Funnel data loaded:', funnel);
+
+      // Buscar informações do proprietário
+      let ownerName = '';
+      if (funnel.user_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', funnel.user_id)
+          .single();
+        
+        ownerName = profileData?.name || '';
+      }
+
       setFunnelData({
         id: funnel.id,
         name: funnel.name,
         canvas_data: funnel.canvas_data || { nodes: [], edges: [] },
-        owner_name: funnel.profiles?.name,
+        owner_name: ownerName,
         allow_download: shareData.allow_download
       });
 

@@ -1,4 +1,3 @@
-
 import { memo, useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Target, 
   MousePointer, 
@@ -40,6 +40,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
   const [showContentPopup, setShowContentPopup] = useState(false);
   const [tempName, setTempName] = useState(data.label);
   const customizerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const getNodeIcon = (type: string) => {
     switch (type) {
@@ -210,6 +211,10 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
   const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg' : '';
   const iconBgClass = getIconBackgroundColor(data.type);
 
+  // Responsive sizing
+  const nodeWidth = isMobile ? 'min-w-[280px] max-w-[320px]' : 'min-w-[304px] max-w-[512px]';
+  const nodePadding = isMobile ? 'px-3 py-3' : 'px-5 py-4';
+
   return (
     <div className={`relative ${selectedClass}`}>
       {/* Handles nas 4 direções */}
@@ -272,7 +277,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
       
       <div 
         className={`
-          px-5 py-4 rounded-lg border-2 shadow-md min-w-[304px] max-w-[512px]
+          ${nodePadding} rounded-lg border-2 shadow-md ${nodeWidth}
           bg-white border-gray-300 text-gray-800 ${selectedClass}
           transition-all duration-200 hover:shadow-lg
           ${isReadOnly && hasRealContent ? 'cursor-pointer' : ''}
@@ -280,28 +285,28 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         onClick={handleNodeClick}
       >
         <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center space-x-2 flex-1">
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
             <div 
-              className={`w-6 h-6 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}
+              className={`w-5 h-5 md:w-6 md:h-6 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}
             >
               {getNodeIcon(data.type)}
             </div>
-            <span className="font-medium text-sm select-none">
+            <span className="font-medium text-xs md:text-sm select-none truncate">
               {data.label}
             </span>
           </div>
           
           {/* Só mostra os botões de edição se não estiver em modo somente leitura */}
           {!isReadOnly && (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 flex-shrink-0">
               {/* Botão de edição */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
                 onClick={handleOpenEditor}
               >
-                <Edit3 className="w-3 h-3" />
+                <Edit3 className="w-2.5 h-2.5 md:w-3 md:h-3" />
               </Button>
               
               {/* Configurações */}
@@ -315,32 +320,32 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-6 w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                    className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
                     onClick={handleSettingsClick}
                   >
-                    <Settings className="w-3 h-3" />
+                    <Settings className="w-2.5 h-2.5 md:w-3 md:h-3" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent 
-                  className="w-80 p-4" 
+                  className="w-72 md:w-80 p-3 md:p-4" 
                   side="top" 
                   align="end"
                   ref={customizerRef}
                 >
-                  <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <form onSubmit={handleFormSubmit} className="space-y-3 md:space-y-4">
                     {/* Campo para editar o nome */}
                     <div>
-                      <Label htmlFor="element-name" className="text-sm font-medium">Nome do Elemento</Label>
+                      <Label htmlFor="element-name" className="text-xs md:text-sm font-medium">Nome do Elemento</Label>
                       <div className="flex space-x-2 mt-1">
                         <Input
                           id="element-name"
                           value={tempName}
                           onChange={handleInputChange}
                           onKeyDown={handleInputKeyDown}
-                          className="flex-1"
+                          className="flex-1 text-xs md:text-sm"
                           placeholder="Nome do elemento"
                         />
-                        <Button type="submit" size="sm">
+                        <Button type="submit" size="sm" className="text-xs">
                           Salvar
                         </Button>
                       </div>
@@ -379,7 +384,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         {hasRealContent && (
           <div className="text-xs bg-gray-100 rounded p-1 mt-2">
             {data.content && data.content.title && (
-              <div className="font-medium truncate">{data.content.title}</div>
+              <div className="font-medium truncate text-xs">{data.content.title}</div>
             )}
           </div>
         )}
@@ -391,38 +396,42 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
           <PopoverTrigger asChild>
             <div style={{ display: 'none' }} />
           </PopoverTrigger>
-          <PopoverContent className="w-96 p-4" side="top" align="center">
-            <div className="space-y-3">
+          <PopoverContent 
+            className={`${isMobile ? 'w-80' : 'w-96'} p-3 md:p-4`} 
+            side={isMobile ? "bottom" : "top"} 
+            align="center"
+          >
+            <div className="space-y-2 md:space-y-3">
               <div className="flex items-center space-x-2">
-                <div className={`w-5 h-5 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-4 h-4 md:w-5 md:h-5 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}>
                   {getNodeIcon(data.type)}
                 </div>
-                <h3 className="font-medium text-sm">{data.label}</h3>
+                <h3 className="font-medium text-xs md:text-sm truncate">{data.label}</h3>
               </div>
               
               {data.content && (
                 <div className="space-y-2">
                   {data.content.title && (
                     <div>
-                      <h4 className="font-medium text-sm text-gray-700">Título:</h4>
-                      <p className="text-sm text-gray-600">{data.content.title}</p>
+                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Título:</h4>
+                      <p className="text-xs md:text-sm text-gray-600 break-words">{data.content.title}</p>
                     </div>
                   )}
                   
                   {data.content.description && (
                     <div>
-                      <h4 className="font-medium text-sm text-gray-700">Descrição:</h4>
-                      <p className="text-sm text-gray-600">{data.content.description}</p>
+                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Descrição:</h4>
+                      <p className="text-xs md:text-sm text-gray-600 break-words">{data.content.description}</p>
                     </div>
                   )}
                   
                   {data.content.items && data.content.items.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-sm text-gray-700">Itens:</h4>
+                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Itens:</h4>
                       <ul className="space-y-1">
                         {data.content.items.map((item, index) => (
                           item.content && item.content.trim() !== '' && (
-                            <li key={index} className="text-sm text-gray-600">
+                            <li key={index} className="text-xs md:text-sm text-gray-600 break-words">
                               • {item.content}
                             </li>
                           )

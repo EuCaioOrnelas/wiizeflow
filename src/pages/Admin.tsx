@@ -54,7 +54,7 @@ const Admin = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Target className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
+          <Target className="w-12 h-12 mx-auto mb-4 animate-spin" style={{ color: 'rgb(6, 214, 160)' }} />
           <p className="text-gray-600 dark:text-gray-400">Carregando painel administrativo...</p>
         </div>
       </div>
@@ -88,10 +88,10 @@ const Admin = () => {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Target className="w-8 h-8 text-green-600" />
+              <Target className="w-8 h-8" style={{ color: 'rgb(6, 214, 160)' }} />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">WiizeFlow</span>
             </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
+            <Badge variant="secondary" className="bg-green-100 text-green-800" style={{ backgroundColor: 'rgba(6, 214, 160, 0.1)', color: 'rgb(6, 214, 160)' }}>
               <Crown className="w-3 h-3 mr-1" />
               Admin
             </Badge>
@@ -137,10 +137,10 @@ const Admin = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
-              <Activity className="h-4 w-4 text-green-600" />
+              <Activity className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
                 {stats?.online_users || 0}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -169,10 +169,10 @@ const Admin = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Receita Mensal Projetada</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <DollarSign className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
                 {formatCurrency(stats?.projected_monthly_revenue || 0)}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -262,7 +262,7 @@ const Admin = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <DollarSign className="w-5 h-5 mr-2 text-green-600" />
+                <DollarSign className="w-5 h-5 mr-2" style={{ color: 'rgb(6, 214, 160)' }} />
                 Detalhamento da Receita
               </CardTitle>
             </CardHeader>
@@ -290,7 +290,7 @@ const Admin = () => {
                 
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
                     {formatCurrency(stats?.projected_monthly_revenue || 0)}
                   </p>
                   <p className="text-xs text-gray-500">

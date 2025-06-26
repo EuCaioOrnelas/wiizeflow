@@ -117,7 +117,7 @@
   fill: #ffffff !important;
 }
 
-/* Green color overrides for buttons and elements */
+/* Green color overrides for buttons and elements - Updated to new green */
 .bg-blue-500, .bg-blue-600, .bg-blue-700 {
   background-color: rgb(6, 214, 160) !important;
 }
@@ -135,6 +135,27 @@
 }
 
 .ring-blue-500 {
+  --tw-ring-color: rgb(6, 214, 160) !important;
+}
+
+/* Additional green color overrides for comprehensive coverage */
+.bg-green-500, .bg-green-600, .bg-green-700 {
+  background-color: rgb(6, 214, 160) !important;
+}
+
+.hover\:bg-green-600:hover, .hover\:bg-green-700:hover {
+  background-color: rgb(5, 195, 148) !important;
+}
+
+.text-green-600, .text-green-500 {
+  color: rgb(6, 214, 160) !important;
+}
+
+.border-green-500, .border-green-600 {
+  border-color: rgb(6, 214, 160) !important;
+}
+
+.ring-green-500, .ring-green-600 {
   --tw-ring-color: rgb(6, 214, 160) !important;
 }
 

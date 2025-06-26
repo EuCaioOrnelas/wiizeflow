@@ -204,12 +204,14 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6" style={{
+      background: 'linear-gradient(to bottom right, rgb(240, 253, 250), rgb(255, 255, 255), rgb(209, 250, 229))'
+    }}>
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Target className="w-10 h-10 text-green-600" />
+            <Target className="w-10 h-10" style={{ color: 'rgb(6, 214, 160)' }} />
             <span className="text-3xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -289,51 +291,51 @@ const Auth = () => {
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         {passwordValidation.minLength ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-sm ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.minLength ? { color: 'rgb(6, 214, 160)' } : {}}>
                           Mínimo 8 caracteres
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {passwordValidation.hasUpperCase ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-sm ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasUpperCase ? { color: 'rgb(6, 214, 160)' } : {}}>
                           Pelo menos 1 letra maiúscula
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {passwordValidation.hasLowerCase ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-sm ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasLowerCase ? { color: 'rgb(6, 214, 160)' } : {}}>
                           Pelo menos 1 letra minúscula
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {passwordValidation.hasNumber ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-sm ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasNumber ? { color: 'rgb(6, 214, 160)' } : {}}>
                           Pelo menos 1 número
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {passwordValidation.hasSpecialChar ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-sm ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasSpecialChar ? { color: 'rgb(6, 214, 160)' } : {}}>
                           Pelo menos 1 caractere especial (!@#$%^&*)
                         </span>
                       </div>
@@ -344,7 +346,8 @@ const Auth = () => {
               
               <Button 
                 type="submit" 
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full"
+                style={{ backgroundColor: 'rgb(6, 214, 160)' }}
                 disabled={loading || (!isLogin && !isPasswordValid)}
               >
                 {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar Conta Gratuita')}
@@ -361,6 +364,7 @@ const Auth = () => {
                   setName("");
                 }}
                 className="text-green-600 hover:text-green-700 text-sm font-medium"
+                style={{ color: 'rgb(6, 214, 160)' }}
               >
                 {isLogin 
                   ? 'Não tem conta? Criar conta gratuita' 
@@ -385,11 +389,11 @@ const Auth = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Ao criar uma conta, você concorda com nossos{' '}
-              <a href="/terms" className="text-green-600 hover:text-green-700">
+              <a href="/terms" className="text-green-600 hover:text-green-700" style={{ color: 'rgb(6, 214, 160)' }}>
                 Termos de Uso
               </a>{' '}
               e{' '}
-              <a href="/privacy" className="text-green-600 hover:text-green-700">
+              <a href="/privacy" className="text-green-600 hover:text-green-700" style={{ color: 'rgb(6, 214, 160)' }}>
                 Política de Privacidade
               </a>
             </p>

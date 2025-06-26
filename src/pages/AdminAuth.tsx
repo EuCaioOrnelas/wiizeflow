@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -166,7 +165,7 @@ const AdminAuth = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="relative">
-              <Target className="w-10 h-10 text-green-600" />
+              <Target className="w-10 h-10" style={{ color: 'rgb(6, 214, 160)' }} />
               <Shield className="w-5 h-5 text-yellow-500 absolute -top-1 -right-1" />
             </div>
             <span className="text-3xl font-bold text-white">WiizeFlow</span>
@@ -231,7 +230,8 @@ const AdminAuth = () => {
               
               <Button 
                 type="submit" 
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full"
+                style={{ backgroundColor: 'rgb(6, 214, 160)' }}
                 disabled={loading}
               >
                 {loading ? 'Verificando...' : 'Entrar como Admin'}

@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Target, LogOut, Edit3, User, CreditCard, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Target, LogOut, Edit3, User, CreditCard, Trash2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
@@ -27,6 +27,9 @@ const Dashboard = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingFunnelId, setEditingFunnelId] = useState<string | null>(null);
+  const [editingFunnelName, setEditingFunnelName] = useState("");
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -232,6 +235,62 @@ const Dashboard = () => {
     navigate('/account');
   };
 
+  const startEditingFunnelName = (funnel: Funnel) => {
+    setEditingFunnelId(funnel.id);
+    setEditingFunnelName(funnel.name);
+  };
+
+  const cancelEditingFunnelName = () => {
+    setEditingFunnelId(null);
+    setEditingFunnelName("");
+  };
+
+  const saveFunnelName = async (funnelId: string) => {
+    if (!user || !editingFunnelName.trim()) return;
+
+    setIsUpdatingName(true);
+
+    try {
+      const { error } = await supabase
+        .from('funnels')
+        .update({ name: editingFunnelName.trim() })
+        .eq('id', funnelId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating funnel name:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar nome do funil.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setFunnels(prev => prev.map(f => 
+        f.id === funnelId ? { ...f, name: editingFunnelName.trim() } : f
+      ));
+
+      toast({
+        title: "Nome atualizado!",
+        description: "O nome do funil foi atualizado com sucesso.",
+      });
+
+      setEditingFunnelId(null);
+      setEditingFunnelName("");
+
+    } catch (error) {
+      console.error('Error updating funnel name:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar nome do funil.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
   const getPlanColor = (plan: string) => {
     switch (plan) {
       case 'free': return 'text-gray-600 bg-gray-100';
@@ -295,7 +354,7 @@ const Dashboard = () => {
       <header className="bg-white border-b transition-colors duration-300">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Target className="w-8 h-8 text-green-600" />
+            <Target className="w-8 h-8 text-green-600" style={{ color: 'rgb(6, 214, 160)' }} />
             <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           
@@ -331,8 +390,11 @@ const Dashboard = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                 <div 
-                  className="bg-green-600 h-2 rounded-full" 
-                  style={{ width: `${getProgressPercentage()}%` }}
+                  className="h-2 rounded-full" 
+                  style={{ 
+                    width: `${getProgressPercentage()}%`,
+                    backgroundColor: 'rgb(6, 214, 160)'
+                  }}
                 ></div>
               </div>
               {isAtLimit() && (
@@ -379,7 +441,8 @@ const Dashboard = () => {
           
           <Button 
             onClick={createNewFunnel} 
-            className={`${isAtLimit() ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+            className={`${isAtLimit() ? 'bg-gray-400 cursor-not-allowed' : ''}`}
+            style={!isAtLimit() ? { backgroundColor: 'rgb(6, 214, 160)' } : {}}
             disabled={isAtLimit() || creatingFunnel}
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -388,7 +451,9 @@ const Dashboard = () => {
         </div>
 
         {profile.plan_type === 'free' && (
-          <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white p-6 rounded-lg mb-8">
+          <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white p-6 rounded-lg mb-8" style={{
+            background: 'linear-gradient(to right, rgb(59, 130, 246), rgb(6, 214, 160))'
+          }}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold mb-2">🚀 Desbloqueie todo o potencial</h3>
@@ -437,8 +502,8 @@ const Dashboard = () => {
               Comece criando seu primeiro funil de vendas
             </p>
             <Button 
-              onClick={createNewFunnel} 
-              className="bg-green-600 hover:bg-green-700"
+              onClick={createNewFunnel}
+              style={{ backgroundColor: 'rgb(6, 214, 160)' }}
               disabled={creatingFunnel}
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -451,21 +516,61 @@ const Dashboard = () => {
               <Card key={funnel.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>{funnel.name}</span>
-                    <div className="flex items-center space-x-2">
-                      <Edit3 className="w-4 h-4 text-gray-400" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFunnel(funnel);
-                        }}
-                        className="p-1 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {editingFunnelId === funnel.id ? (
+                      <div className="flex items-center space-x-2 flex-1">
+                        <Input
+                          value={editingFunnelName}
+                          onChange={(e) => setEditingFunnelName(e.target.value)}
+                          className="flex-1"
+                          autoFocus
+                          disabled={isUpdatingName}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => saveFunnelName(funnel.id)}
+                          disabled={isUpdatingName || !editingFunnelName.trim()}
+                          style={{ backgroundColor: 'rgb(6, 214, 160)' }}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={cancelEditingFunnelName}
+                          disabled={isUpdatingName}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span>{funnel.name}</span>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingFunnelName(funnel);
+                            }}
+                            className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFunnel(funnel);
+                            }}
+                            className="p-1 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -477,7 +582,8 @@ const Dashboard = () => {
                   </p>
                   <Button 
                     onClick={() => openFunnel(funnel.id)}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full"
+                    style={{ backgroundColor: 'rgb(6, 214, 160)' }}
                     variant="outline"
                   >
                     Abrir Funil

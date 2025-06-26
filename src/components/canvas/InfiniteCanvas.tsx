@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -543,7 +542,6 @@ const InfiniteCanvasInner = ({
             onExportAsPDF={exportAsPDF}
             onSave={saveFunnel}
             onOpenTemplateManager={userPlan !== 'free' ? () => setIsTemplateManagerOpen(true) : undefined}
-            funnelId={funnelId}
           />
         )}
 

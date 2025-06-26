@@ -36,51 +36,6 @@ export type Database = {
         }
         Relationships: []
       }
-      funnel_shares: {
-        Row: {
-          allow_download: boolean
-          created_at: string | null
-          funnel_id: string
-          id: string
-          owner_id: string
-          share_token: string
-          updated_at: string | null
-        }
-        Insert: {
-          allow_download?: boolean
-          created_at?: string | null
-          funnel_id: string
-          id?: string
-          owner_id: string
-          share_token: string
-          updated_at?: string | null
-        }
-        Update: {
-          allow_download?: boolean
-          created_at?: string | null
-          funnel_id?: string
-          id?: string
-          owner_id?: string
-          share_token?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "funnel_shares_funnel_id_fkey"
-            columns: ["funnel_id"]
-            isOneToOne: false
-            referencedRelation: "funnels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "funnel_shares_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       funnels: {
         Row: {
           canvas_data: Json | null

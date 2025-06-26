@@ -1,16 +1,17 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Save, 
-  Undo2, 
-  Redo2, 
-  Download, 
-  FileText, 
-  Layers,
-  Share2
+  Undo, 
+  Redo, 
+  Edit3,
+  Check,
+  X,
+  FolderOpen
 } from 'lucide-react';
-import { FunnelShareDialog } from './FunnelShareDialog';
 
 interface CanvasHeaderProps {
   funnelName: string;
@@ -22,8 +23,7 @@ interface CanvasHeaderProps {
   onExportAsImage: () => void;
   onExportAsPDF: () => void;
   onSave: () => void;
-  onOpenTemplateManager?: () => void;
-  funnelId?: string;
+  onOpenTemplateManager: () => void;
 }
 
 export const CanvasHeader = ({
@@ -33,115 +33,127 @@ export const CanvasHeader = ({
   onRedo,
   canUndo,
   canRedo,
-  onExportAsImage,
-  onExportAsPDF,
   onSave,
-  onOpenTemplateManager,
-  funnelId
+  onOpenTemplateManager
 }: CanvasHeaderProps) => {
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingName, setEditingName] = useState(funnelName);
+  const { toast } = useToast();
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditingName(funnelName);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingName.trim()) {
+      onFunnelNameChange(editingName.trim());
+      setIsEditing(false);
+      toast({
+        title: "Nome atualizado!",
+        description: "O nome do funil foi atualizado com sucesso.",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingName(funnelName);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   return (
-    <>
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Input
-              value={funnelName}
-              onChange={(e) => onFunnelNameChange(e.target.value)}
-              className="text-lg font-semibold bg-transparent border-none focus:ring-0 focus:border-none p-0 h-auto"
-              placeholder="Nome do funil"
-            />
-          </div>
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+      <div className="flex items-center justify-between">
+        {/* Left side - Funnel name */}
+        <div className="flex items-center space-x-4">
+          {isEditing ? (
+            <div className="flex items-center space-x-2">
+              <Input
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="text-lg font-medium w-64"
+                placeholder="Nome do funil"
+                autoFocus
+              />
+              <Button size="sm" onClick={handleSaveEdit}>
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <h1 className="text-lg font-medium text-gray-900 dark:text-white">
+                {funnelName}
+              </h1>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleStartEdit}
+                className="p-1 h-auto"
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
 
-          <div className="flex items-center space-x-2">
+        {/* Right side - Actions */}
+        <div className="flex items-center space-x-2">
+          {/* Undo/Redo */}
+          <div className="flex items-center space-x-1">
             <Button
-              variant="outline"
               size="sm"
+              variant="outline"
               onClick={onUndo}
               disabled={!canUndo}
               title="Desfazer (Ctrl+Z)"
             >
-              <Undo2 className="w-4 h-4" />
+              <Undo className="w-4 h-4" />
             </Button>
-            
             <Button
-              variant="outline"
               size="sm"
+              variant="outline"
               onClick={onRedo}
               disabled={!canRedo}
               title="Refazer (Ctrl+Y)"
             >
-              <Redo2 className="w-4 h-4" />
-            </Button>
-
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportAsImage}
-              title="Exportar como PNG"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              PNG
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportAsPDF}
-              title="Exportar como PDF"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
-
-            {onOpenTemplateManager && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenTemplateManager}
-                title="Gerenciar Templates"
-              >
-                <Layers className="w-4 h-4 mr-2" />
-                Templates
-              </Button>
-            )}
-
-            {funnelId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsShareDialogOpen(true)}
-                title="Compartilhar funil"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Compartilhar
-              </Button>
-            )}
-
-            <Button
-              onClick={onSave}
-              className="bg-green-600 hover:bg-green-700"
-              size="sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Salvar
+              <Redo className="w-4 h-4" />
             </Button>
           </div>
+
+          {/* Templates */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onOpenTemplateManager}
+            title="Gerenciar Templates"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Templates
+          </Button>
+
+          {/* Save */}
+          <Button
+            size="sm"
+            onClick={onSave}
+            title="Salvar (Ctrl+S)"
+          >
+            <Save className="w-4 h-4" />
+            Salvar
+          </Button>
         </div>
       </div>
-
-      {/* Dialog de compartilhamento */}
-      {funnelId && (
-        <FunnelShareDialog
-          isOpen={isShareDialogOpen}
-          onClose={() => setIsShareDialogOpen(false)}
-          funnelId={funnelId}
-          funnelName={funnelName}
-        />
-      )}
-    </>
+    </div>
   );
 };

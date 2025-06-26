@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Target, 
@@ -25,7 +26,8 @@ import {
   Megaphone,
   Building2,
   Clock,
-  Phone
+  Phone,
+  X
 } from 'lucide-react';
 
 interface CustomNodeComponentProps extends NodeProps {
@@ -390,60 +392,64 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         )}
       </div>
 
-      {/* Popup de conteúdo para modo somente leitura */}
-      {isReadOnly && hasRealContent && (
-        <Popover open={showContentPopup} onOpenChange={setShowContentPopup}>
-          <PopoverTrigger asChild>
-            <div style={{ display: 'none' }} />
-          </PopoverTrigger>
-          <PopoverContent 
-            className={`${isMobile ? 'w-80' : 'w-96'} p-3 md:p-4`} 
-            side={isMobile ? "bottom" : "top"} 
-            align="center"
-          >
-            <div className="space-y-2 md:space-y-3">
-              <div className="flex items-center space-x-2">
+      {/* Dialog de conteúdo para modo somente leitura - centralizado e maior */}
+      {isReadOnly && (
+        <Dialog open={showContentPopup} onOpenChange={setShowContentPopup}>
+          <DialogContent className={`${isMobile ? 'w-[95vw] max-w-[95vw]' : 'w-[80vw] max-w-2xl'} max-h-[80vh] overflow-hidden`}>
+            <DialogHeader className="pb-4">
+              <DialogTitle className="flex items-center space-x-2 text-sm md:text-base">
                 <div className={`w-4 h-4 md:w-5 md:h-5 ${iconBgClass} rounded flex items-center justify-center flex-shrink-0`}>
                   {getNodeIcon(data.type)}
                 </div>
-                <h3 className="font-medium text-xs md:text-sm truncate">{data.label}</h3>
-              </div>
-              
+                <span className="truncate">{data.label}</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
               {data.content && (
-                <div className="space-y-2">
+                <>
                   {data.content.title && (
                     <div>
-                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Título:</h4>
-                      <p className="text-xs md:text-sm text-gray-600 break-words">{data.content.title}</p>
+                      <h4 className="font-medium text-sm md:text-base text-gray-700 mb-1">Título:</h4>
+                      <p className="text-sm md:text-base text-gray-600 break-words bg-gray-50 p-3 rounded">{data.content.title}</p>
                     </div>
                   )}
                   
                   {data.content.description && (
                     <div>
-                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Descrição:</h4>
-                      <p className="text-xs md:text-sm text-gray-600 break-words">{data.content.description}</p>
+                      <h4 className="font-medium text-sm md:text-base text-gray-700 mb-1">Descrição:</h4>
+                      <p className="text-sm md:text-base text-gray-600 break-words bg-gray-50 p-3 rounded whitespace-pre-wrap">{data.content.description}</p>
                     </div>
                   )}
                   
                   {data.content.items && data.content.items.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-xs md:text-sm text-gray-700">Itens:</h4>
-                      <ul className="space-y-1">
+                      <h4 className="font-medium text-sm md:text-base text-gray-700 mb-2">Conteúdo Adicional:</h4>
+                      <div className="space-y-2">
                         {data.content.items.map((item, index) => (
                           item.content && item.content.trim() !== '' && (
-                            <li key={index} className="text-xs md:text-sm text-gray-600 break-words">
-                              • {item.content}
-                            </li>
+                            <div key={index} className="bg-gray-50 p-3 rounded">
+                              <p className="text-sm md:text-base text-gray-600 break-words whitespace-pre-wrap">
+                                {item.content}
+                              </p>
+                            </div>
                           )
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
-          </PopoverContent>
-        </Popover>
+
+            <div className="flex justify-end pt-4 border-t">
+              <Button onClick={() => setShowContentPopup(false)} variant="outline" size="sm">
+                <X className="w-4 h-4 mr-2" />
+                Fechar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

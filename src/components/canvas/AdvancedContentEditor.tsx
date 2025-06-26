@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { ContentItem } from '@/types/contentEditor';
+import { ContentItemButtons } from '@/components/content-editor/ContentItemButtons';
+import { ContentItemCard } from '@/components/content-editor/ContentItemCard';
 
 interface AdvancedContentEditorProps {
   node: Node<CustomNodeData>;
@@ -39,12 +41,19 @@ export const AdvancedContentEditor = ({
       
       // Convert existing items to new format if needed
       const items = node.data.content.items || [];
-      const formattedItems = items.map((item: any, index: number) => ({
-        id: item.id || `item-${index}`,
-        type: 'paragraph' as const,
-        content: item.content || '',
-        style: {}
-      }));
+      const formattedItems = items.map((item: any, index: number) => {
+        // Check if item is already in new format
+        if (item.type && item.id) {
+          return item;
+        }
+        // Convert old format to new format
+        return {
+          id: item.id || `item-${index}`,
+          type: 'paragraph' as const,
+          content: item.content || '',
+          style: {}
+        };
+      });
       setContentItems(formattedItems);
     }
     setElementName(node.data.label);
@@ -53,42 +62,108 @@ export const AdvancedContentEditor = ({
   const handleSave = () => {
     if (!onSave) return;
 
-    // Convert content items back to the expected format
-    const items = contentItems.map(item => ({
-      id: item.id,
-      content: item.content
-    }));
-
     const content: NodeContent = {
       title: title.trim(),
       description: description.trim(),
-      items
+      items: contentItems
     };
 
     onSave(content, elementName.trim());
     onClose();
   };
 
-  const addContentItem = () => {
+  const addContentItem = (type: ContentItem['type']) => {
     const newItem: ContentItem = {
       id: `item-${Date.now()}`,
-      type: 'paragraph',
+      type,
       content: '',
       style: {}
     };
+
+    if (type === 'list' || type === 'checklist') {
+      newItem.items = [];
+    }
+
     setContentItems([...contentItems, newItem]);
   };
 
-  const updateContentItem = (id: string, content: string) => {
+  const updateContentItem = (id: string, updates: Partial<ContentItem>) => {
     setContentItems(items => 
       items.map(item => 
-        item.id === id ? { ...item, content } : item
+        item.id === id ? { ...item, ...updates } : item
       )
     );
   };
 
   const removeContentItem = (id: string) => {
     setContentItems(items => items.filter(item => item.id !== id));
+  };
+
+  const addListItem = (itemId: string) => {
+    setContentItems(items =>
+      items.map(item => {
+        if (item.id === itemId && (item.type === 'list' || item.type === 'checklist')) {
+          return {
+            ...item,
+            items: [
+              ...(item.items || []),
+              { 
+                id: Date.now().toString(), 
+                text: '', 
+                checked: item.type === 'checklist' ? false : undefined 
+              }
+            ]
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const updateListItem = (itemId: string, listItemId: string, text: string) => {
+    setContentItems(items =>
+      items.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            items: item.items?.map(listItem => 
+              listItem.id === listItemId ? { ...listItem, text } : listItem
+            )
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const toggleChecklistItem = (itemId: string, listItemId: string) => {
+    setContentItems(items =>
+      items.map(item => {
+        if (item.id === itemId && item.type === 'checklist') {
+          return {
+            ...item,
+            items: item.items?.map(listItem => 
+              listItem.id === listItemId ? { ...listItem, checked: !listItem.checked } : listItem
+            )
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeListItem = (itemId: string, listItemId: string) => {
+    setContentItems(items =>
+      items.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            items: item.items?.filter(listItem => listItem.id !== listItemId)
+          };
+        }
+        return item;
+      })
+    );
   };
 
   return (
@@ -151,43 +226,22 @@ export const AdvancedContentEditor = ({
                   Conteúdo Adicional
                 </Label>
                 {!isReadOnly && (
-                  <Button
-                    onClick={addContentItem}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Adicionar
-                  </Button>
+                  <ContentItemButtons onAddItem={addContentItem} />
                 )}
               </div>
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {contentItems.map((item, index) => (
-                  <div key={item.id} className="border border-gray-200 rounded-md p-3">
-                    <div className="flex items-start space-x-2">
-                      <div className="flex-1">
-                        <Textarea
-                          value={item.content}
-                          onChange={(e) => updateContentItem(item.id, e.target.value)}
-                          className="text-xs md:text-sm min-h-[120px] resize-y"
-                          placeholder={`Conteúdo ${index + 1}`}
-                          readOnly={isReadOnly}
-                        />
-                      </div>
-                      {!isReadOnly && (
-                        <Button
-                          onClick={() => removeContentItem(item.id)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-700 flex-shrink-0 p-1 h-auto"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {contentItems.map((item) => (
+                  <ContentItemCard
+                    key={item.id}
+                    item={item}
+                    onUpdate={(updates) => updateContentItem(item.id, updates)}
+                    onRemove={() => removeContentItem(item.id)}
+                    onAddListItem={() => addListItem(item.id)}
+                    onUpdateListItem={(listItemId, text) => updateListItem(item.id, listItemId, text)}
+                    onToggleChecklist={(listItemId) => toggleChecklistItem(item.id, listItemId)}
+                    onRemoveListItem={(listItemId) => removeListItem(item.id, listItemId)}
+                  />
                 ))}
                 
                 {contentItems.length === 0 && (

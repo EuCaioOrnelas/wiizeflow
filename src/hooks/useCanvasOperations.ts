@@ -59,6 +59,12 @@ export const useCanvasOperations = ({
         return 'Blog';
       case 'googlebusiness':
         return 'Google meu negócio';
+      case 'prospeccao':
+        return 'Prospecção';
+      case 'conversapresencial':
+        return 'Conversa Presencial';
+      case 'indicacao':
+        return 'Indicação';
       case 'text':
         return 'Anotação';
       case 'wait':

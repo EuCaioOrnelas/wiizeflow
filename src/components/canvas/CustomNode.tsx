@@ -27,7 +27,10 @@ import {
   Building2,
   Clock,
   Phone,
-  X
+  X,
+  Users,
+  Handshake,
+  UserPlus
 } from 'lucide-react';
 
 interface CustomNodeComponentProps extends NodeProps {
@@ -82,6 +85,12 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         return <FileText className="w-4 h-4 text-white" />;
       case 'googlebusiness':
         return <Building2 className="w-4 h-4 text-white" />;
+      case 'prospeccao':
+        return <Users className="w-4 h-4 text-white" />;
+      case 'conversapresencial':
+        return <Handshake className="w-4 h-4 text-white" />;
+      case 'indicacao':
+        return <UserPlus className="w-4 h-4 text-white" />;
       case 'text':
         return <FileText className="w-4 h-4 text-white" />;
       case 'wait':
@@ -131,6 +140,12 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         return 'bg-slate-600';
       case 'googlebusiness':
         return 'bg-green-600';
+      case 'prospeccao':
+        return 'bg-teal-500';
+      case 'conversapresencial':
+        return 'bg-amber-600';
+      case 'indicacao':
+        return 'bg-cyan-500';
       case 'text':
         return 'bg-indigo-500';
       case 'wait':
@@ -207,7 +222,11 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
     (data.content.title && data.content.title.trim() !== '') ||
     (data.content.description && data.content.description.trim() !== '') ||
     (data.content.items && data.content.items.length > 0 && 
-     data.content.items.some(item => item.content && item.content.trim() !== ''))
+     data.content.items.some((item: any) => {
+       if (item.content && item.content.trim() !== '') return true;
+       if (item.items && item.items.length > 0) return true;
+       return false;
+     }))
   );
 
   const selectedClass = selected ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg' : '';
@@ -378,6 +397,9 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
            data.type === 'googleads' ? 'Google Ads' :
            data.type === 'blog' ? 'Blog' :
            data.type === 'googlebusiness' ? 'Google meu negócio' :
+           data.type === 'prospeccao' ? 'Prospecção' :
+           data.type === 'conversapresencial' ? 'Conversa Presencial' :
+           data.type === 'indicacao' ? 'Indicação' :
            data.type === 'text' ? 'Anotação' :
            data.type === 'wait' ? 'Tempo de espera' :
            data.type === 'other' ? 'Customizado' : data.type}
@@ -426,14 +448,31 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
                     <div>
                       <h4 className="font-medium text-sm md:text-base text-gray-700 mb-2">Conteúdo Adicional:</h4>
                       <div className="space-y-2">
-                        {data.content.items.map((item, index) => (
-                          item.content && item.content.trim() !== '' && (
-                            <div key={index} className="bg-gray-50 p-3 rounded">
+                        {data.content.items.map((item: any, index: number) => (
+                          <div key={index} className="bg-gray-50 p-3 rounded">
+                            {item.content && item.content.trim() !== '' && (
                               <p className="text-sm md:text-base text-gray-600 break-words whitespace-pre-wrap">
                                 {item.content}
                               </p>
-                            </div>
-                          )
+                            )}
+                            {item.items && item.items.length > 0 && (
+                              <ul className="mt-2 space-y-1">
+                                {item.items.map((listItem: any, listIndex: number) => (
+                                  <li key={listIndex} className="flex items-center space-x-2">
+                                    {item.type === 'checklist' && (
+                                      <input 
+                                        type="checkbox" 
+                                        checked={listItem.checked || false} 
+                                        readOnly 
+                                        className="rounded border-gray-300"
+                                      />
+                                    )}
+                                    <span className="text-sm text-gray-600">{listItem.text}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,10 @@ import {
   Building2,
   Clock,
   Phone,
-  X
+  X,
+  Users,
+  Handshake,
+  UserPlus
 } from 'lucide-react';
 
 const blockCategories = [
@@ -51,6 +53,9 @@ const blockCategories = [
       { type: 'googleads', name: 'Google Ads', icon: Target, color: 'bg-yellow-500' },
       { type: 'blog', name: 'Blog', icon: FileText, color: 'bg-slate-600' },
       { type: 'googlebusiness', name: 'Google meu negócio', icon: Building2, color: 'bg-green-600' },
+      { type: 'prospeccao', name: 'Prospecção', icon: Users, color: 'bg-teal-500' },
+      { type: 'conversapresencial', name: 'Conversa Presencial', icon: Handshake, color: 'bg-amber-600' },
+      { type: 'indicacao', name: 'Indicação', icon: UserPlus, color: 'bg-cyan-500' },
     ]
   },
   {

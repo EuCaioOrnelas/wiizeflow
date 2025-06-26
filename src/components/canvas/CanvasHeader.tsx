@@ -10,7 +10,8 @@ import {
   Edit3,
   Check,
   X,
-  FolderOpen
+  FolderOpen,
+  Share2
 } from 'lucide-react';
 
 interface CanvasHeaderProps {
@@ -23,7 +24,9 @@ interface CanvasHeaderProps {
   onExportAsImage: () => void;
   onExportAsPDF: () => void;
   onSave: () => void;
-  onOpenTemplateManager: () => void;
+  onOpenTemplateManager?: () => void;
+  onShareFunnel?: () => void;
+  isReadOnly?: boolean;
 }
 
 export const CanvasHeader = ({
@@ -34,13 +37,16 @@ export const CanvasHeader = ({
   canUndo,
   canRedo,
   onSave,
-  onOpenTemplateManager
+  onOpenTemplateManager,
+  onShareFunnel,
+  isReadOnly = false
 }: CanvasHeaderProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState(funnelName);
   const { toast } = useToast();
 
   const handleStartEdit = () => {
+    if (isReadOnly) return;
     setIsEditing(true);
     setEditingName(funnelName);
   };
@@ -74,7 +80,7 @@ export const CanvasHeader = ({
       <div className="flex items-center justify-between">
         {/* Left side - Funnel name */}
         <div className="flex items-center space-x-4">
-          {isEditing ? (
+          {isEditing && !isReadOnly ? (
             <div className="flex items-center space-x-2">
               <Input
                 value={editingName}
@@ -96,63 +102,82 @@ export const CanvasHeader = ({
               <h1 className="text-lg font-medium text-gray-900 dark:text-white">
                 {funnelName}
               </h1>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleStartEdit}
-                className="p-1 h-auto"
-              >
-                <Edit3 className="w-4 h-4" />
-              </Button>
+              {!isReadOnly && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleStartEdit}
+                  className="p-1 h-auto"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           )}
         </div>
 
         {/* Right side - Actions */}
-        <div className="flex items-center space-x-2">
-          {/* Undo/Redo */}
-          <div className="flex items-center space-x-1">
+        {!isReadOnly && (
+          <div className="flex items-center space-x-2">
+            {/* Undo/Redo */}
+            <div className="flex items-center space-x-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onUndo}
+                disabled={!canUndo}
+                title="Desfazer (Ctrl+Z)"
+              >
+                <Undo className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRedo}
+                disabled={!canRedo}
+                title="Refazer (Ctrl+Y)"
+              >
+                <Redo className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Share button */}
+            {onShareFunnel && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onShareFunnel}
+                title="Compartilhar Visualização"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar
+              </Button>
+            )}
+
+            {/* Templates */}
+            {onOpenTemplateManager && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onOpenTemplateManager}
+                title="Gerenciar Templates"
+              >
+                <FolderOpen className="w-4 h-4" />
+                Templates
+              </Button>
+            )}
+
+            {/* Save */}
             <Button
               size="sm"
-              variant="outline"
-              onClick={onUndo}
-              disabled={!canUndo}
-              title="Desfazer (Ctrl+Z)"
+              onClick={onSave}
+              title="Salvar (Ctrl+S)"
             >
-              <Undo className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onRedo}
-              disabled={!canRedo}
-              title="Refazer (Ctrl+Y)"
-            >
-              <Redo className="w-4 h-4" />
+              <Save className="w-4 h-4" />
+              Salvar
             </Button>
           </div>
-
-          {/* Templates */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onOpenTemplateManager}
-            title="Gerenciar Templates"
-          >
-            <FolderOpen className="w-4 h-4" />
-            Templates
-          </Button>
-
-          {/* Save */}
-          <Button
-            size="sm"
-            onClick={onSave}
-            title="Salvar (Ctrl+S)"
-          >
-            <Save className="w-4 h-4" />
-            Salvar
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );

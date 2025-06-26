@@ -36,6 +36,7 @@ import { EdgeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
 import { Minimize, Maximize } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ShareFunnelDialog } from '@/components/ShareFunnelDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +64,7 @@ const nodeTypes = {
 interface ExtendedInfiniteCanvasProps extends InfiniteCanvasProps {
   initialCanvasData?: { nodes: Node<CustomNodeData>[]; edges: Edge[] };
   onSave?: (canvasData: { nodes: Node<CustomNodeData>[]; edges: Edge[] }) => void;
+  isReadOnly?: boolean;
 }
 
 const InfiniteCanvasInner = ({ 
@@ -70,7 +72,8 @@ const InfiniteCanvasInner = ({
   funnelName, 
   onFunnelNameChange, 
   initialCanvasData,
-  onSave 
+  onSave,
+  isReadOnly = false
 }: ExtendedInfiniteCanvasProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CustomNodeData>>(
     initialCanvasData?.nodes || []
@@ -84,6 +87,7 @@ const InfiniteCanvasInner = ({
   const [currentEdgeType, setCurrentEdgeType] = useState<EdgeType>('straight');
   const [edgeToDelete, setEdgeToDelete] = useState<string | null>(null);
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [lastSaved, setLastSaved] = useState<string>('');
   const [userPlan, setUserPlan] = useState<string>('free');
@@ -117,10 +121,12 @@ const InfiniteCanvasInner = ({
       }
     };
 
-    loadUserPlan();
-  }, []);
+    if (!isReadOnly) {
+      loadUserPlan();
+    }
+  }, [isReadOnly]);
 
-  // Custom hooks
+  // Custom hooks (apenas no modo de edição)
   const {
     saveToHistory,
     undo,
@@ -146,8 +152,10 @@ const InfiniteCanvasInner = ({
     saveToHistory
   });
 
-  // Auto-save functionality
+  // Auto-save functionality (apenas no modo de edição)
   useEffect(() => {
+    if (isReadOnly) return;
+    
     const autoSave = () => {
       const currentData = JSON.stringify({ nodes, edges });
       if (currentData !== lastSaved && onSave) {
@@ -156,12 +164,14 @@ const InfiniteCanvasInner = ({
       }
     };
 
-    const timeoutId = setTimeout(autoSave, 2000); // Auto-save after 2 seconds of inactivity
+    const timeoutId = setTimeout(autoSave, 2000);
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges, lastSaved, onSave]);
+  }, [nodes, edges, lastSaved, onSave, isReadOnly]);
 
-  // Handle node updates
+  // Handle node updates (apenas no modo de edição)
   const handleUpdateNode = useCallback((nodeId: string, updates: Partial<CustomNodeData>) => {
+    if (isReadOnly) return;
+    
     setNodes((nds) =>
       nds.map((node) =>
         node.id === nodeId
@@ -170,12 +180,12 @@ const InfiniteCanvasInner = ({
       )
     );
     saveToHistory();
-  }, [setNodes, saveToHistory]);
+  }, [setNodes, saveToHistory, isReadOnly]);
 
   // Modificar os nodeTypes para incluir a função de atualização
   const customNodeTypes = {
     custom: (props: any) => (
-      <CustomNode {...props} onUpdateNode={handleUpdateNode} />
+      <CustomNode {...props} onUpdateNode={isReadOnly ? undefined : handleUpdateNode} isReadOnly={isReadOnly} />
     ),
   };
 
@@ -215,46 +225,54 @@ const InfiniteCanvasInner = ({
     return { nodes, edges };
   }, [nodes, edges]);
 
-  // Undo/Redo handlers
+  // Undo/Redo handlers (apenas no modo de edição)
   const handleUndo = useCallback(() => {
+    if (isReadOnly) return;
+    
     const prevState = undo();
     if (prevState) {
       setNodes(prevState.nodes);
       setEdges(prevState.edges);
       setHistoryIndex(prev => prev - 1);
     }
-  }, [undo, setNodes, setEdges, setHistoryIndex]);
+  }, [undo, setNodes, setEdges, setHistoryIndex, isReadOnly]);
 
   const handleRedo = useCallback(() => {
+    if (isReadOnly) return;
+    
     const nextState = redo();
     if (nextState) {
       setNodes(nextState.nodes);
       setEdges(nextState.edges);
       setHistoryIndex(prev => prev + 1);
     }
-  }, [redo, setNodes, setEdges, setHistoryIndex]);
+  }, [redo, setNodes, setEdges, setHistoryIndex, isReadOnly]);
 
-  // Hotkeys
+  // Hotkeys (apenas no modo de edição)
   useCanvasHotkeys({
-    onUndo: handleUndo,
-    onRedo: handleRedo,
-    onCopy: copyNodes,
-    onPaste: pasteNodes,
-    onDelete: deleteSelected,
-    onSave: () => {
+    onUndo: isReadOnly ? () => {} : handleUndo,
+    onRedo: isReadOnly ? () => {} : handleRedo,
+    onCopy: isReadOnly ? () => {} : copyNodes,
+    onPaste: isReadOnly ? () => {} : pasteNodes,
+    onDelete: isReadOnly ? () => {} : deleteSelected,
+    onSave: isReadOnly ? () => {} : () => {
       if (onSave) {
         onSave({ nodes, edges });
       }
     }
   });
 
-  // Drag and Drop handlers
+  // Drag and Drop handlers (apenas no modo de edição)
   const onDragOver = useCallback((event: React.DragEvent) => {
+    if (isReadOnly) return;
+    
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-  }, []);
+  }, [isReadOnly]);
 
   const onDrop = useCallback((event: React.DragEvent) => {
+    if (isReadOnly) return;
+    
     event.preventDefault();
 
     const type = event.dataTransfer.getData('application/reactflow');
@@ -269,10 +287,12 @@ const InfiniteCanvasInner = ({
     });
 
     addNode(type, position);
-  }, [screenToFlowPosition, addNode]);
+  }, [screenToFlowPosition, addNode, isReadOnly]);
 
   const onConnect = useCallback(
     (params: Connection) => {
+      if (isReadOnly) return;
+      
       const newEdge = {
         ...params,
         type: currentEdgeType,
@@ -282,17 +302,19 @@ const InfiniteCanvasInner = ({
       setEdges((eds) => addEdge(newEdge, eds));
       saveToHistory();
     },
-    [setEdges, saveToHistory, currentEdgeType]
+    [setEdges, saveToHistory, currentEdgeType, isReadOnly]
   );
 
-  // Função para deletar edge ao clicar com confirmação
+  // Função para deletar edge ao clicar com confirmação (apenas no modo de edição)
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    if (isReadOnly) return;
+    
     event.stopPropagation();
     setEdgeToDelete(edge.id);
-  }, []);
+  }, [isReadOnly]);
 
   const confirmDeleteEdge = useCallback(() => {
-    if (edgeToDelete) {
+    if (edgeToDelete && !isReadOnly) {
       setEdges((edges) => edges.filter((e) => e.id !== edgeToDelete));
       saveToHistory();
       toast({
@@ -301,7 +323,7 @@ const InfiniteCanvasInner = ({
       });
       setEdgeToDelete(null);
     }
-  }, [edgeToDelete, setEdges, saveToHistory, toast]);
+  }, [edgeToDelete, setEdges, saveToHistory, toast, isReadOnly]);
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node<CustomNodeData>) => {
     setSelectedNode(node);
@@ -313,27 +335,31 @@ const InfiniteCanvasInner = ({
   }, []);
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node<CustomNodeData>) => {
+    if (isReadOnly) return;
+    
     event.preventDefault();
     setContextMenu({
       x: event.clientX,
       y: event.clientY,
       nodeId: node.id,
     });
-  }, []);
+  }, [isReadOnly]);
 
   const onPaneContextMenu = useCallback((event: React.MouseEvent) => {
+    if (isReadOnly) return;
+    
     event.preventDefault();
     setContextMenu({
       x: event.clientX,
       y: event.clientY,
     });
-  }, []);
+  }, [isReadOnly]);
 
   const saveFunnel = useCallback(() => {
-    if (onSave) {
+    if (onSave && !isReadOnly) {
       onSave({ nodes, edges });
     }
-  }, [nodes, edges, onSave]);
+  }, [nodes, edges, onSave, isReadOnly]);
 
   // Função melhorada para exportar como imagem
   const exportAsImage = useCallback(async () => {
@@ -527,7 +553,7 @@ const InfiniteCanvasInner = ({
 
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">
-      {!isMinimized && <CanvasSidebar onAddNode={addNode} />}
+      {!isMinimized && !isReadOnly && <CanvasSidebar onAddNode={addNode} />}
       
       <div className="flex-1 flex flex-col">
         {!isMinimized && (
@@ -538,10 +564,12 @@ const InfiniteCanvasInner = ({
             onRedo={handleRedo}
             canUndo={canUndo}
             canRedo={canRedo}
-            onExportAsImage={exportAsImage}
-            onExportAsPDF={exportAsPDF}
+            onExportAsImage={() => {}} // TODO: implement export functions
+            onExportAsPDF={() => {}} // TODO: implement export functions
             onSave={saveFunnel}
-            onOpenTemplateManager={userPlan !== 'free' ? () => setIsTemplateManagerOpen(true) : undefined}
+            onOpenTemplateManager={userPlan !== 'free' && !isReadOnly ? () => setIsTemplateManagerOpen(true) : undefined}
+            onShareFunnel={!isReadOnly ? () => setIsShareDialogOpen(true) : undefined}
+            isReadOnly={isReadOnly}
           />
         )}
 
@@ -550,26 +578,29 @@ const InfiniteCanvasInner = ({
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            onNodesChange={isReadOnly ? () => {} : onNodesChange}
+            onEdgesChange={isReadOnly ? () => {} : onEdgesChange}
+            onConnect={isReadOnly ? () => {} : onConnect}
             onNodeClick={onNodeClick}
             onNodeDoubleClick={onNodeDoubleClick}
-            onNodeContextMenu={onNodeContextMenu}
-            onPaneContextMenu={onPaneContextMenu}
-            onEdgeClick={onEdgeClick}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
+            onNodeContextMenu={isReadOnly ? undefined : onNodeContextMenu}
+            onPaneContextMenu={isReadOnly ? undefined : onPaneContextMenu}
+            onEdgeClick={isReadOnly ? undefined : onEdgeClick}
+            onDragOver={isReadOnly ? undefined : onDragOver}
+            onDrop={isReadOnly ? undefined : onDrop}
             nodeTypes={customNodeTypes}
             fitView
-            snapToGrid
+            snapToGrid={!isReadOnly}
             snapGrid={[20, 20]}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             minZoom={0.1}
             maxZoom={4}
             attributionPosition="bottom-left"
+            nodesDraggable={!isReadOnly}
+            nodesConnectable={!isReadOnly}
+            elementsSelectable={!isReadOnly}
           >
-            <Controls />
+            {!isReadOnly && <Controls />}
             <MiniMap 
               nodeColor="#10b981"
               maskColor="rgba(0, 0, 0, 0.1)"
@@ -586,8 +617,9 @@ const InfiniteCanvasInner = ({
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 flex items-center space-x-4">
                 <span className="text-sm text-gray-600 dark:text-gray-300">
                   {nodes.length} nós • {edges.length} conexões
+                  {isReadOnly && <span className="ml-2 text-blue-600">• Modo Visualização</span>}
                 </span>
-                {!isMinimized && (
+                {!isMinimized && !isReadOnly && (
                   <EdgeTypeSelector 
                     currentType={currentEdgeType}
                     onTypeChange={setCurrentEdgeType}
@@ -596,27 +628,29 @@ const InfiniteCanvasInner = ({
               </div>
             </Panel>
 
-            {/* Minimize/Maximize Button */}
-            <Panel position="top-right">
-              <Button
-                onClick={() => setIsMinimized(!isMinimized)}
-                variant="outline"
-                size="sm"
-                className="bg-white hover:bg-gray-50 shadow-md"
-              >
-                {isMinimized ? (
-                  <Maximize className="w-4 h-4" />
-                ) : (
-                  <Minimize className="w-4 h-4" />
-                )}
-              </Button>
-            </Panel>
+            {/* Minimize/Maximize Button (apenas no modo de edição) */}
+            {!isReadOnly && (
+              <Panel position="top-right">
+                <Button
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white hover:bg-gray-50 shadow-md"
+                >
+                  {isMinimized ? (
+                    <Maximize className="w-4 h-4" />
+                  ) : (
+                    <Minimize className="w-4 h-4" />
+                  )}
+                </Button>
+              </Panel>
+            )}
           </ReactFlow>
         </div>
       </div>
 
-      {/* Context Menu */}
-      {contextMenu && !isMinimized && (
+      {/* Context Menu (apenas no modo de edição) */}
+      {contextMenu && !isMinimized && !isReadOnly && (
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
@@ -635,37 +669,52 @@ const InfiniteCanvasInner = ({
           node={selectedNode}
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
-          onSave={(content, elementName) => updateNodeContent(selectedNode.id, content, elementName)}
+          onSave={isReadOnly ? undefined : (content, elementName) => updateNodeContent(selectedNode.id, content, elementName)}
+          isReadOnly={isReadOnly}
         />
       )}
 
-      {/* Template Manager - always render but controlled by isOpen prop */}
-      <TemplateManager
-        isOpen={isTemplateManagerOpen}
-        onClose={() => setIsTemplateManagerOpen(false)}
-        onLoadTemplate={handleLoadTemplate}
-        onSaveTemplate={handleSaveTemplate}
-      />
+      {/* Template Manager (apenas no modo de edição) */}
+      {!isReadOnly && (
+        <TemplateManager
+          isOpen={isTemplateManagerOpen}
+          onClose={() => setIsTemplateManagerOpen(false)}
+          onLoadTemplate={handleLoadTemplate}
+          onSaveTemplate={handleSaveTemplate}
+        />
+      )}
 
-      {/* Alert Dialog para confirmar exclusão de conexão */}
-      <AlertDialog open={!!edgeToDelete} onOpenChange={() => setEdgeToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover Conexão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover esta conexão? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setEdgeToDelete(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteEdge}>
-              Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Share Dialog (apenas no modo de edição) */}
+      {!isReadOnly && (
+        <ShareFunnelDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          funnelId={funnelId}
+          funnelName={funnelName}
+        />
+      )}
+
+      {/* Alert Dialog para confirmar exclusão de conexão (apenas no modo de edição) */}
+      {!isReadOnly && (
+        <AlertDialog open={!!edgeToDelete} onOpenChange={() => setEdgeToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover Conexão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover esta conexão? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setEdgeToDelete(null)}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteEdge}>
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { Node, Edge } from '@xyflow/react';
 
 export interface NodeContent {
@@ -27,6 +28,7 @@ export interface InfiniteCanvasProps {
   onFunnelNameChange: (name: string) => void;
   initialCanvasData?: { nodes: Node<CustomNodeData>[]; edges: Edge[] };
   onSave?: (canvasData: { nodes: Node<CustomNodeData>[]; edges: Edge[] }) => void;
+  isReadOnly?: boolean;
 }
 
 export type EdgeType = 'straight' | 'default';

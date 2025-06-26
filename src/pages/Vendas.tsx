@@ -84,7 +84,7 @@ const Vendas = () => {
       ],
       buttonText: "Assinar Mensal",
       popular: false,
-      color: "blue",
+      color: "green",
       priceId: "price_1RdhpHG1GdQ2ZjmFmYXfEFJa"
     },
     {
@@ -203,7 +203,7 @@ const Vendas = () => {
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <div className="lg:w-1/2 space-y-6">
               <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                Usado por 5.000+ empresários brasileiros
+                Usado por centenas de empresários brasileiros
               </Badge>
               
               <h1 className="text-4xl lg:text-6xl font-bold text-[#2B2D42] leading-tight">
@@ -267,7 +267,7 @@ const Vendas = () => {
                       Editor Visual Drag & Drop
                     </div>
                     <div className="bg-gray-100 rounded-lg p-3 text-center font-medium">
-                      Templates de Conversão
+                      Sistema simples e prático de usar
                     </div>
                     <div className="bg-gray-100 rounded-lg p-3 text-center font-medium">
                       Análise de Performance
@@ -292,22 +292,17 @@ const Vendas = () => {
           </h2>
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-8">
-              <script src="https://fast.wistia.com/player.js" async></script>
-              <script src="https://fast.wistia.com/embed/ueahsngyvm.js" async type="module"></script>
-              <style>
-                {`wistia-player[media-id='ueahsngyvm']:not(:defined) { 
-                  background: center / contain no-repeat url('https://fast.wistia.com/embed/medias/ueahsngyvm/swatch'); 
-                  display: block; 
-                  filter: blur(5px); 
-                  padding-top: 56.25%; 
-                  border-radius: 12px;
-                }`}
-              </style>
-              <div 
-                dangerouslySetInnerHTML={{
-                  __html: '<wistia-player media-id="ueahsngyvm" aspect="1.7777777777777777" class="rounded-xl"></wistia-player>'
-                }}
-              />
+              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                <iframe 
+                  className="absolute top-0 left-0 w-full h-full rounded-xl"
+                  src="https://www.youtube-nocookie.com/embed/wEPym_yQTyE?si=-RoR8Y3ZA26xFV-P&controls=0" 
+                  title="YouTube video player" 
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  referrerPolicy="strict-origin-when-cross-origin" 
+                  allowFullScreen
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -355,12 +350,10 @@ const Vendas = () => {
                 Nossa ferramenta foi desenvolvida pensando nas necessidades específicas do mercado brasileiro, oferecendo uma interface intuitiva, suporte em português e templates otimizados para diferentes tipos de negócio.
               </p>
             </div>
-            <div className="lg:w-1/2">
-              <img 
-                src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
-                alt="Interface do WiizeFlow mostrando criação de funis visuais"
-                className="w-full rounded-xl shadow-lg"
-              />
+            <div className="lg:w-1/2 flex justify-center">
+              <div className="flex items-center justify-center w-64 h-64 bg-white rounded-xl">
+                <Target className="w-32 h-32 text-[#06D6A0]" />
+              </div>
             </div>
           </div>
         </div>
@@ -396,7 +389,7 @@ const Vendas = () => {
       </section>
 
       {/* Como funciona */}
-      <section className="py-16 bg-[#FFF8E2]">
+      <section className="py-16 bg-[#F4FDF9]">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-[#2B2D42] text-center mb-12">
             Como funciona (passo a passo)
@@ -491,18 +484,14 @@ const Vendas = () => {
             ))}
           </div>
           
-          <div className="grid md:grid-cols-4 gap-8 text-center">
+          <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-[#06D6A0]">98%</div>
               <div className="text-gray-600">NPS</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#06D6A0]">500+</div>
+              <div className="text-3xl font-bold text-[#06D6A0]">100+</div>
               <div className="text-gray-600">Funis Ativos</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-[#06D6A0]">15min</div>
-              <div className="text-gray-600">Tempo Médio</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[#06D6A0]">268%</div>
@@ -610,7 +599,6 @@ const Vendas = () => {
                     disabled={loading}
                     className={`w-full ${
                       plan.color === 'green' ? 'bg-[#06D6A0] hover:bg-[#05c394] text-white' :
-                      plan.color === 'blue' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
                       'bg-gray-600 hover:bg-gray-700 text-white'
                     }`}
                   >

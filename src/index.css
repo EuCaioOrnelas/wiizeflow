@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 142.1 76.2% 36.3%;
+    --primary: 168 76% 42%;
     --primary-foreground: 355.7 100% 97.3%;
 
     --secondary: 210 40% 96.1%;
@@ -32,18 +33,18 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
+    --ring: 168 76% 42%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 142.1 76.2% 36.3%;
+    --sidebar-primary: 168 76% 42%;
     --sidebar-primary-foreground: 355.7 100% 97.3%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 142.1 76.2% 36.3%;
+    --sidebar-ring: 168 76% 42%;
   }
 
   .dark {
@@ -56,8 +57,8 @@
     --popover: 217.2 32.6% 17.5%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
+    --primary: 168 70% 45%;
+    --primary-foreground: 168 80% 10%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -73,15 +74,15 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 142.4 71.8% 29.2%;
+    --ring: 168 71% 29%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 142.1 70.6% 45.3%;
-    --sidebar-primary-foreground: 144.9 80.4% 10%;
+    --sidebar-primary: 168 70% 45%;
+    --sidebar-primary-foreground: 168 80% 10%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 142.4 71.8% 29.2%;
+    --sidebar-ring: 168 71% 29%;
   }
 }
 
@@ -118,23 +119,23 @@
 
 /* Green color overrides for buttons and elements */
 .bg-blue-500, .bg-blue-600, .bg-blue-700 {
-  @apply bg-green-500;
+  background-color: rgb(6, 214, 160) !important;
 }
 
 .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover {
-  @apply hover:bg-green-600;
+  background-color: rgb(5, 195, 148) !important;
 }
 
 .text-blue-600 {
-  @apply text-green-600;
+  color: rgb(6, 214, 160) !important;
 }
 
 .border-blue-500 {
-  @apply border-green-500;
+  border-color: rgb(6, 214, 160) !important;
 }
 
 .ring-blue-500 {
-  @apply ring-green-500;
+  --tw-ring-color: rgb(6, 214, 160) !important;
 }
 
 /* Dark theme specific styles */
@@ -213,28 +214,28 @@
 
 /* Estilo das setas nas conexões */
 .react-flow__edge .react-flow__edge-path {
-  stroke: #10b981;
+  stroke: rgb(6, 214, 160);
   stroke-width: 2;
   cursor: pointer;
 }
 
 .react-flow__edge .react-flow__edge-path:hover {
-  stroke: #059669;
+  stroke: rgb(5, 195, 148);
   stroke-width: 3;
 }
 
 .react-flow__edge-arrow {
-  fill: #10b981;
+  fill: rgb(6, 214, 160);
 }
 
 /* Hover effect para edges */
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: #059669;
+  stroke: rgb(5, 195, 148);
   stroke-width: 3;
 }
 
 .react-flow__edge:hover .react-flow__edge-arrow {
-  fill: #059669;
+  fill: rgb(5, 195, 148);
 }
 
 /* Tooltip para edges */

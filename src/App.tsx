@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +19,6 @@ import AdminAuth from "./pages/AdminAuth";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
-import Vendas from "./pages/Vendas";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +44,6 @@ function App() {
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-canceled" element={<PaymentCanceled />} />
             <Route path="/shared/:funnelId" element={<SharedFunnel />} />
-            <Route path="/lp" element={<Vendas />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { TrendingUp } from "lucide-react";
+import { Target } from "lucide-react";
 
 const Privacy = () => {
   return (
@@ -9,7 +8,7 @@ const Privacy = () => {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="w-8 h-8 text-green-600" />
+            <Target className="w-8 h-8 text-green-600" />
             <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           <Button 

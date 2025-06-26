@@ -19,7 +19,6 @@ import AdminAuth from "./pages/AdminAuth";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
-import Vendas from "./pages/Vendas";
 
 const queryClient = new QueryClient();
 
@@ -45,9 +44,6 @@ function App() {
             <Route path="/admin-auth" element={<AdminAuth />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
-            <Route path="/vendas" element={<Vendas />} />
-            <Route path="/landing" element={<Vendas />} />
-            <Route path="/lp" element={<Vendas />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

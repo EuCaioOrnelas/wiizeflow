@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,46 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
   const [hasExistingShare, setHasExistingShare] = useState(false);
   const { toast } = useToast();
 
+  // Verificar se já existe um compartilhamento quando o dialog abrir
+  useEffect(() => {
+    if (isOpen && funnelId) {
+      checkExistingShare();
+    }
+  }, [isOpen, funnelId]);
+
+  const checkExistingShare = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) return;
+
+      const { data: existingShare, error } = await supabase
+        .from('funnel_shares')
+        .select('share_token, allow_download')
+        .eq('funnel_id', funnelId)
+        .eq('owner_id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking existing share:', error);
+        return;
+      }
+
+      if (existingShare) {
+        setHasExistingShare(true);
+        setAllowDownload(existingShare.allow_download);
+        const url = `${window.location.origin}/shared/${existingShare.share_token}`;
+        setShareUrl(url);
+      } else {
+        setHasExistingShare(false);
+        setShareUrl('');
+        setAllowDownload(false);
+      }
+    } catch (error) {
+      console.error('Error checking existing share:', error);
+    }
+  };
+
   const generateShareToken = () => {
     return 'share_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
   };
@@ -49,35 +89,15 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
         return;
       }
 
-      console.log('Creating share for funnel:', funnelId, 'user:', session.user.id);
+      console.log('Creating/updating share for funnel:', funnelId, 'user:', session.user.id);
 
-      // Verificar se já existe um compartilhamento
-      const { data: existingShare, error: checkError } = await supabase
-        .from('funnel_shares')
-        .select('*')
-        .eq('funnel_id', funnelId)
-        .eq('owner_id', session.user.id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking existing share:', checkError);
-        toast({
-          title: "Erro",
-          description: "Erro ao verificar compartilhamento existente.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      let shareToken;
-      
-      if (existingShare) {
-        console.log('Updating existing share:', existingShare.id);
+      if (hasExistingShare) {
         // Atualizar compartilhamento existente
         const { error: updateError } = await supabase
           .from('funnel_shares')
           .update({ allow_download: allowDownload })
-          .eq('id', existingShare.id);
+          .eq('funnel_id', funnelId)
+          .eq('owner_id', session.user.id);
 
         if (updateError) {
           console.error('Error updating share:', updateError);
@@ -89,11 +109,13 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
           return;
         }
 
-        shareToken = existingShare.share_token;
-        setHasExistingShare(true);
+        toast({
+          title: "Atualizado!",
+          description: "Configurações de compartilhamento atualizadas com sucesso.",
+        });
       } else {
         // Criar novo compartilhamento
-        shareToken = generateShareToken();
+        const shareToken = generateShareToken();
         console.log('Creating new share with token:', shareToken);
         
         const { error: insertError } = await supabase
@@ -115,17 +137,16 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
           return;
         }
 
-        setHasExistingShare(false);
+        const url = `${window.location.origin}/shared/${shareToken}`;
+        setShareUrl(url);
+        setHasExistingShare(true);
+        console.log('Generated share URL:', url);
+
+        toast({
+          title: "Link criado!",
+          description: "Link de compartilhamento gerado com sucesso.",
+        });
       }
-
-      const url = `${window.location.origin}/shared/${shareToken}`;
-      setShareUrl(url);
-      console.log('Generated share URL:', url);
-
-      toast({
-        title: "Link criado!",
-        description: hasExistingShare ? "Compartilhamento atualizado com sucesso." : "Link de compartilhamento gerado com sucesso.",
-      });
 
     } catch (error) {
       console.error('Error creating/updating share:', error);
@@ -156,8 +177,7 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
   };
 
   const handleClose = () => {
-    setShareUrl('');
-    setHasExistingShare(false);
+    // Não limpar o estado ao fechar, manter para próxima abertura
     onClose();
   };
 
@@ -220,7 +240,7 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
             Cancelar
           </Button>
           <Button onClick={createOrUpdateShare} disabled={loading}>
-            {loading ? 'Gerando...' : shareUrl ? 'Atualizar' : 'Gerar Link'}
+            {loading ? 'Processando...' : hasExistingShare ? (shareUrl ? 'Atualizar' : 'Gerar Link') : 'Gerar Link'}
           </Button>
         </DialogFooter>
       </DialogContent>

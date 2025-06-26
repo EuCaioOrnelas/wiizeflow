@@ -43,7 +43,7 @@ function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-canceled" element={<PaymentCanceled />} />
-            <Route path="/shared/:funnelId" element={<SharedFunnel />} />
+            <Route path="/shared/:shareToken" element={<SharedFunnel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

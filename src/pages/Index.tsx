@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,7 @@ const Index = () => {
     {
       title: "Economize tempo e recursos",
       description: "Com WiizeFlow, você automatiza tarefas, elimina processos manuais e foca no que realmente importa: o crescimento do seu negócio.",
-      icon: Calendar
+      icon: BarChart3
     },
     {
       title: "Tenha uma visão clara do seu negócio",

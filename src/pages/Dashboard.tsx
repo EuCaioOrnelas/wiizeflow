@@ -328,12 +328,13 @@ const Dashboard = () => {
       <DeleteFunnelDialog
         isOpen={isDeleteDialogOpen}
         onConfirm={deleteFunnel}
-        onCancel={cancelDeleteFunnel}
+        onClose={cancelDeleteFunnel}
         funnelName={
           deleteFunnelId
-            ? funnels.find(funnel => funnel.id === deleteFunnelId)?.name
+            ? funnels.find(funnel => funnel.id === deleteFunnelId)?.name || ""
             : ""
         }
+        isDeleting={false}
       />
     </div>
   );

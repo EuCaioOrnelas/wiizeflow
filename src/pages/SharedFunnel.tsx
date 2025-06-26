@@ -15,7 +15,12 @@ const SharedFunnel = () => {
 
   useEffect(() => {
     if (shareToken) {
+      console.log('Loading shared funnel with token:', shareToken);
       loadSharedFunnel();
+    } else {
+      console.log('No share token provided');
+      setError('Token de compartilhamento não fornecido.');
+      setLoading(false);
     }
   }, [shareToken]);
 
@@ -24,13 +29,24 @@ const SharedFunnel = () => {
       setLoading(true);
       setError(null);
       
+      console.log('Fetching shared funnel...');
       const data = await getSharedFunnel(shareToken!);
       
+      console.log('Received data:', data);
+      
       if (!data) {
+        console.log('No data returned from getSharedFunnel');
         setError('Funil não encontrado ou link inválido.');
         return;
       }
       
+      if (!data.funnels) {
+        console.log('No funnel data in response');
+        setError('Dados do funil não encontrados.');
+        return;
+      }
+      
+      console.log('Setting funnel data:', data);
       setFunnelData(data);
     } catch (error) {
       console.error('Error loading shared funnel:', error);
@@ -48,7 +64,7 @@ const SharedFunnel = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Carregando funil...
           </h2>
@@ -71,7 +87,7 @@ const SharedFunnel = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {error || 'O link de compartilhamento pode ter expirado ou sido removido.'}
           </p>
-          <Button onClick={goToHome} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={goToHome} className="bg-green-600 hover:bg-green-700">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Ir para a Página Inicial
           </Button>

@@ -153,6 +153,9 @@ export const useFunnelShare = () => {
 
   const getSharedFunnel = async (shareToken: string) => {
     try {
+      console.log('Getting shared funnel with token:', shareToken);
+      
+      // Usar o service role key para acessar dados compartilhados publicamente
       const { data: shareData, error: shareError } = await supabase
         .from('funnel_shares')
         .select(`
@@ -173,6 +176,7 @@ export const useFunnelShare = () => {
         return null;
       }
 
+      console.log('Share data found:', shareData);
       return shareData;
     } catch (error) {
       console.error('Error getting shared funnel:', error);

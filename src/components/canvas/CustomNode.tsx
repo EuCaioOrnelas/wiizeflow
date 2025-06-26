@@ -19,7 +19,8 @@ import {
   MessageSquare,
   Clock,
   Edit,
-  Eye
+  Eye,
+  Settings
 } from 'lucide-react';
 import { CustomNodeData } from '@/types/canvas';
 import { EmojiGallery } from './EmojiGallery';
@@ -32,34 +33,34 @@ interface CustomNodeProps extends NodeProps {
 
 const getNodeIcon = (type: string, customIcon?: string) => {
   if (customIcon) {
-    return <span className="text-2xl">{customIcon}</span>;
+    return <span className="text-lg">{customIcon}</span>;
   }
 
   const iconMap: Record<string, React.ReactNode> = {
-    capture: <Mail className="w-6 h-6" />,
-    sales: <ShoppingCart className="w-6 h-6" />,
-    upsell: <TrendingUp className="w-6 h-6" />,
-    downsell: <TrendingDown className="w-6 h-6" />,
-    thankyou: <Heart className="w-6 h-6" />,
-    checkout: <CreditCard className="w-6 h-6" />,
-    email: <Mail className="w-6 h-6" />,
-    whatsapp: <MessageCircle className="w-6 h-6" />,
-    sms: <MessageSquare className="w-6 h-6" />,
-    call: <Phone className="w-6 h-6" />,
-    dminstagram: <MessageCircle className="w-6 h-6" />,
-    instagram: <Instagram className="w-6 h-6" />,
-    youtube: <Youtube className="w-6 h-6" />,
-    tiktok: <Zap className="w-6 h-6" />,
-    metaads: <Zap className="w-6 h-6" />,
-    googleads: <Zap className="w-6 h-6" />,
-    blog: <Edit className="w-6 h-6" />,
-    googlebusiness: <Zap className="w-6 h-6" />,
-    text: <Edit className="w-6 h-6" />,
-    wait: <Clock className="w-6 h-6" />,
-    other: <Edit className="w-6 h-6" />,
+    capture: <Mail className="w-4 h-4" />,
+    sales: <ShoppingCart className="w-4 h-4" />,
+    upsell: <TrendingUp className="w-4 h-4" />,
+    downsell: <TrendingDown className="w-4 h-4" />,
+    thankyou: <Heart className="w-4 h-4" />,
+    checkout: <CreditCard className="w-4 h-4" />,
+    email: <Mail className="w-4 h-4" />,
+    whatsapp: <MessageCircle className="w-4 h-4" />,
+    sms: <MessageSquare className="w-4 h-4" />,
+    call: <Phone className="w-4 h-4" />,
+    dminstagram: <MessageCircle className="w-4 h-4" />,
+    instagram: <Instagram className="w-4 h-4" />,
+    youtube: <Youtube className="w-4 h-4" />,
+    tiktok: <Zap className="w-4 h-4" />,
+    metaads: <Zap className="w-4 h-4" />,
+    googleads: <Zap className="w-4 h-4" />,
+    blog: <Edit className="w-4 h-4" />,
+    googlebusiness: <Zap className="w-4 h-4" />,
+    text: <Edit className="w-4 h-4" />,
+    wait: <Clock className="w-4 h-4" />,
+    other: <Edit className="w-4 h-4" />,
   };
 
-  return iconMap[type] || <Edit className="w-6 h-6" />;
+  return iconMap[type] || <Edit className="w-4 h-4" />;
 };
 
 const getNodeColor = (type: string, customColor?: string, nodeColor?: string) => {
@@ -67,9 +68,9 @@ const getNodeColor = (type: string, customColor?: string, nodeColor?: string) =>
   if (customColor) return customColor;
 
   const colorMap: Record<string, string> = {
-    capture: '#3b82f6',
+    capture: '#10b981',
     sales: '#10b981',
-    upsell: '#f59e0b',
+    upsell: '#10b981',
     downsell: '#ef4444',
     thankyou: '#8b5cf6',
     checkout: '#06b6d4',
@@ -90,7 +91,7 @@ const getNodeColor = (type: string, customColor?: string, nodeColor?: string) =>
     other: '#6b7280',
   };
 
-  return colorMap[type] || '#6b7280';
+  return colorMap[type] || '#10b981';
 };
 
 export const CustomNode = memo(({ 
@@ -116,101 +117,90 @@ export const CustomNode = memo(({
     }
   };
 
-  const handleNodeColorChange = (color: string) => {
-    if (onUpdateNode && !readOnly) {
-      onUpdateNode(id, { nodeColor: color });
-    }
-  };
-
   return (
     <>
-      <Card 
-        className={`min-w-[200px] max-w-[300px] shadow-lg border-2 transition-all duration-200 ${
-          selected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200'
+      <div 
+        className={`bg-white border-2 rounded-lg shadow-lg min-w-[240px] max-w-[300px] transition-all duration-200 ${
+          selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
         } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
-        style={{
-          backgroundColor: nodeColor + '15',
-          borderColor: selected ? '#3b82f6' : nodeColor + '50'
-        }}
       >
-        <CardHeader className="pb-2">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <div 
-                className="p-2 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: nodeColor, color: 'white' }}
+                className="p-2 rounded-lg flex items-center justify-center text-white"
+                style={{ backgroundColor: nodeColor }}
               >
                 {getNodeIcon(data.type, data.customIcon)}
               </div>
               <div className="flex-1">
-                <CardTitle className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <h3 className="text-sm font-medium text-gray-900 truncate">
                   {data.label}
-                </CardTitle>
+                </h3>
                 <p className="text-xs text-gray-500 capitalize">{data.type}</p>
               </div>
             </div>
             
-            {data.hasContent && (
-              <Badge variant="secondary" className="text-xs">
-                <Eye className="w-3 h-3 mr-1" />
-                Conteúdo
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-
-        {!readOnly && (
-          <CardContent className="pt-0">
-            <div className="flex flex-wrap gap-1">
+            <div className="flex items-center space-x-1">
+              {!readOnly && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0 hover:bg-gray-100"
+                  onClick={() => setShowEmojiGallery(true)}
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+              )}
+              
               <Button
                 size="sm"
-                variant="outline"
-                className="text-xs h-6 px-2"
-                onClick={() => setShowEmojiGallery(true)}
+                variant="ghost"
+                className="h-6 w-6 p-0 hover:bg-gray-100"
               >
-                🎭 Ícone
+                <Settings className="w-3 h-3" />
               </Button>
-              
-              <div className="flex space-x-1">
-                {['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'].map((color) => (
-                  <button
-                    key={color}
-                    className="w-4 h-4 rounded-full border border-gray-300 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorChange(color)}
-                  />
-                ))}
-              </div>
             </div>
-          </CardContent>
-        )}
+          </div>
+        </div>
 
-        {/* Handles para conexões */}
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
-          style={{ top: -6 }}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
-          style={{ bottom: -6 }}
-        />
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
-          style={{ left: -6 }}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
-          style={{ right: -6 }}
-        />
-      </Card>
+        {/* Content indicator */}
+        {data.hasContent && (
+          <div className="px-4 py-2">
+            <Badge variant="secondary" className="text-xs">
+              <Eye className="w-3 h-3 mr-1" />
+              Conteúdo
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Handles para conexões */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        style={{ top: -6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        style={{ bottom: -6 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        style={{ left: -6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        style={{ right: -6 }}
+      />
 
       {/* Emoji Gallery */}
       {showEmojiGallery && !readOnly && (

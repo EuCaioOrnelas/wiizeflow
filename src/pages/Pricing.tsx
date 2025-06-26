@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Target, Crown } from "lucide-react";
+import { Check, TrendingUp, Crown } from "lucide-react";
 import { usePayment } from "@/hooks/usePayment";
 import { useState } from "react";
 import EmailCaptureDialog from "@/components/EmailCaptureDialog";
@@ -103,7 +104,7 @@ const Pricing = () => {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Target className="w-8 h-8 text-blue-600" />
+            <TrendingUp className="w-8 h-8 text-blue-600" />
             <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           <Button 

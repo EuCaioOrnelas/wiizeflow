@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from '@supabase/supabase-js';
@@ -204,21 +206,21 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Target className="w-10 h-10 text-green-600" />
+            <TrendingUp className="w-10 h-10 text-blue-600" />
             <span className="text-3xl font-bold text-gray-900">WiizeFlow</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {isLogin ? 'Fazer Login' : 'Criar Conta Gratuita'}
+            {isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta gratuita'}
           </h1>
           <p className="text-gray-600">
             {isLogin 
-              ? 'Acesse sua conta e continue criando seus funis' 
-              : 'Comece gratuitamente e transforme suas ideias em estratégias visuais'
+              ? 'Entre para acessar seus funis de vendas' 
+              : 'Comece a criar funis profissionais em segundos'
             }
           </p>
         </div>

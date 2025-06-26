@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Eye, EyeOff, Shield } from "lucide-react";
+import { TrendingUp, Eye, EyeOff, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from '@supabase/supabase-js';
@@ -166,7 +166,7 @@ const AdminAuth = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="relative">
-              <Target className="w-10 h-10 text-green-600" />
+              <TrendingUp className="w-10 h-10 text-green-600" />
               <Shield className="w-5 h-5 text-yellow-500 absolute -top-1 -right-1" />
             </div>
             <span className="text-3xl font-bold text-white">WiizeFlow</span>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, Target, Users, Zap, TrendingUp, Shield, Globe, MessageCircle, LayoutTemplate, BarChart3, Share2, DollarSign, Brain, Play, Menu, Crown } from "lucide-react";
+import { Check, X, Target, Users, Zap, TrendingUp, Shield, Globe, MessageCircle, LayoutTemplate, BarChart3, Share2, DollarSign, Brain, Play, Menu, Crown, ArrowRight } from "lucide-react";
 import { usePayment } from "@/hooks/usePayment";
 import { useState } from "react";
 import EmailCaptureDialog from "@/components/EmailCaptureDialog";
@@ -124,12 +124,6 @@ const Vendas = () => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-6">
             <Button 
-              className="bg-[#06D6A0] hover:bg-[#FFD166] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-              onClick={() => window.location.href = '/auth'}
-            >
-              Comece Agora
-            </Button>
-            <Button 
               variant="ghost" 
               onClick={() => window.location.href = '/auth'}
               className="text-[#2B2D42] hover:text-[#06D6A0]"
@@ -149,6 +143,12 @@ const Vendas = () => {
               className="text-[#2B2D42] hover:text-[#06D6A0]"
             >
               Preços
+            </Button>
+            <Button 
+              className="bg-[#06D6A0] hover:bg-[#FFD166] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+              onClick={() => window.location.href = '/auth'}
+            >
+              Comece Agora
             </Button>
           </div>
 
@@ -167,12 +167,6 @@ const Vendas = () => {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200 px-6 py-4 space-y-4">
             <Button 
-              className="w-full bg-[#06D6A0] hover:bg-[#FFD166] text-white"
-              onClick={() => window.location.href = '/auth'}
-            >
-              Comece Agora
-            </Button>
-            <Button 
               variant="ghost" 
               className="w-full text-left justify-start"
               onClick={() => window.location.href = '/auth'}
@@ -192,6 +186,12 @@ const Vendas = () => {
               onClick={() => scrollToSection('pricing')}
             >
               Preços
+            </Button>
+            <Button 
+              className="w-full bg-[#06D6A0] hover:bg-[#FFD166] text-white"
+              onClick={() => window.location.href = '/auth'}
+            >
+              Comece Agora
             </Button>
           </div>
         )}
@@ -394,22 +394,31 @@ const Vendas = () => {
           <h2 className="text-3xl font-bold text-[#2B2D42] text-center mb-12">
             Como funciona (passo a passo)
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
             {[
               { step: "1", title: "Crie sua conta", desc: "Cadastro simples e rápido" },
               { step: "2", title: "Crie seu funil visual", desc: "Use nossos templates ou comece do zero" },
               { step: "3", title: "Personalize com drag & drop", desc: "Interface intuitiva e poderosa" },
               { step: "4", title: "Compartilhe e visualize", desc: "Gere links e analise resultados" }
             ].map((item, index) => (
-              <Card key={index} className="text-center p-6">
-                <CardContent className="pt-0">
-                  <div className="w-12 h-12 bg-[#06D6A0] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                    {item.step}
+              <div key={index} className="relative">
+                <Card className="text-center p-6">
+                  <CardContent className="pt-0">
+                    <div className="w-12 h-12 bg-[#06D6A0] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                      {item.step}
+                    </div>
+                    <h3 className="font-semibold text-[#2B2D42] mb-2">{item.title}</h3>
+                    <p className="text-gray-600 text-sm">{item.desc}</p>
+                  </CardContent>
+                </Card>
+                
+                {/* Arrow connecting cards - hidden on last item and mobile */}
+                {index < 3 && (
+                  <div className="hidden lg:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                    <ArrowRight className="w-8 h-8 text-[#06D6A0]" />
                   </div>
-                  <h3 className="font-semibold text-[#2B2D42] mb-2">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.desc}</p>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             ))}
           </div>
         </div>

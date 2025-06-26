@@ -85,7 +85,7 @@ const ReadOnlyCanvasInner = ({
         .from('funnels')
         .insert({
           name: templateName,
-          canvas_data: { nodes, edges },
+          canvas_data: JSON.parse(JSON.stringify({ nodes, edges })),
           user_id: session.user.id
         })
         .select()

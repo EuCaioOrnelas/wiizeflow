@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,7 @@ import {
   Redo2, 
   Download, 
   FileText, 
-  Templates,
+  Layers,
   Share2
 } from 'lucide-react';
 import { FunnelShareDialog } from './FunnelShareDialog';
@@ -105,7 +104,7 @@ export const CanvasHeader = ({
                 onClick={onOpenTemplateManager}
                 title="Gerenciar Templates"
               >
-                <Templates className="w-4 h-4 mr-2" />
+                <Layers className="w-4 h-4 mr-2" />
                 Templates
               </Button>
             )}

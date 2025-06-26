@@ -24,7 +24,8 @@ import {
 import { CustomNodeData } from '@/types/canvas';
 import { EmojiGallery } from './EmojiGallery';
 
-interface CustomNodeProps extends NodeProps<CustomNodeData> {
+interface CustomNodeProps extends NodeProps {
+  data: CustomNodeData;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
   readOnly?: boolean;
 }

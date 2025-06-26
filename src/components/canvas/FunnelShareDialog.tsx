@@ -153,7 +153,7 @@ export const FunnelShareDialog = ({
                 <Checkbox
                   id="allow-download"
                   checked={allowDownload}
-                  onCheckedChange={handleUpdateDownloadPermission}
+                  onCheckedChange={(checked) => handleUpdateDownloadPermission(checked === true)}
                   disabled={loading}
                 />
                 <Label htmlFor="allow-download" className="text-sm">
@@ -186,7 +186,7 @@ export const FunnelShareDialog = ({
                 <Checkbox
                   id="allow-download"
                   checked={allowDownload}
-                  onCheckedChange={setAllowDownload}
+                  onCheckedChange={(checked) => setAllowDownload(checked === true)}
                   disabled={loading}
                 />
                 <Label htmlFor="allow-download" className="text-sm">

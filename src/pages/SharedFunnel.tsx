@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -106,10 +105,24 @@ const SharedFunnel = () => {
         ownerName = profileData?.name || '';
       }
 
+      // Safely parse canvas_data with proper type checking
+      let canvasData = { nodes: [], edges: [] };
+      if (funnel.canvas_data && typeof funnel.canvas_data === 'object') {
+        try {
+          // Type assertion since we know the structure from our database
+          const parsedData = funnel.canvas_data as { nodes: Node<CustomNodeData>[]; edges: Edge[] };
+          if (Array.isArray(parsedData.nodes) && Array.isArray(parsedData.edges)) {
+            canvasData = parsedData;
+          }
+        } catch (error) {
+          console.error('Error parsing canvas data:', error);
+        }
+      }
+
       setFunnelData({
         id: funnel.id,
         name: funnel.name,
-        canvas_data: funnel.canvas_data || { nodes: [], edges: [] },
+        canvas_data: canvasData,
         owner_name: ownerName,
         allow_download: shareData.allow_download
       });

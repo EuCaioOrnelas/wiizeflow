@@ -7,16 +7,18 @@ interface ContentEditorProps {
   node: Node<CustomNodeData>;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (content: NodeContent, elementName?: string) => void;
+  onSave?: (content: NodeContent, elementName?: string) => void;
+  isReadOnly?: boolean;
 }
 
-export const ContentEditor = ({ node, isOpen, onClose, onSave }: ContentEditorProps) => {
+export const ContentEditor = ({ node, isOpen, onClose, onSave, isReadOnly = false }: ContentEditorProps) => {
   return (
     <AdvancedContentEditor
       node={node}
       isOpen={isOpen}
       onClose={onClose}
       onSave={onSave}
+      isReadOnly={isReadOnly}
     />
   );
 };

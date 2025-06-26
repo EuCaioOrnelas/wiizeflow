@@ -37,9 +37,10 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
   const createOrUpdateShare = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session?.user) {
+      if (sessionError || !session?.user) {
+        console.error('Session error:', sessionError);
         toast({
           title: "Erro",
           description: "Você precisa estar logado para compartilhar funis.",
@@ -48,15 +49,17 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
         return;
       }
 
+      console.log('Creating share for funnel:', funnelId, 'user:', session.user.id);
+
       // Verificar se já existe um compartilhamento
       const { data: existingShare, error: checkError } = await supabase
         .from('funnel_shares')
         .select('*')
         .eq('funnel_id', funnelId)
         .eq('owner_id', session.user.id)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('Error checking existing share:', checkError);
         toast({
           title: "Erro",
@@ -69,6 +72,7 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
       let shareToken;
       
       if (existingShare) {
+        console.log('Updating existing share:', existingShare.id);
         // Atualizar compartilhamento existente
         const { error: updateError } = await supabase
           .from('funnel_shares')
@@ -90,6 +94,7 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
       } else {
         // Criar novo compartilhamento
         shareToken = generateShareToken();
+        console.log('Creating new share with token:', shareToken);
         
         const { error: insertError } = await supabase
           .from('funnel_shares')
@@ -115,6 +120,7 @@ export const ShareFunnelDialog = ({ isOpen, onClose, funnelId, funnelName }: Sha
 
       const url = `${window.location.origin}/shared/${shareToken}`;
       setShareUrl(url);
+      console.log('Generated share URL:', url);
 
       toast({
         title: "Link criado!",

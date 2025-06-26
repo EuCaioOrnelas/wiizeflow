@@ -567,7 +567,7 @@ const InfiniteCanvasInner = ({
             onExportAsImage={() => {}} // TODO: implement export functions
             onExportAsPDF={() => {}} // TODO: implement export functions
             onSave={saveFunnel}
-            onOpenTemplateManager={userPlan !== 'free' && !isReadOnly ? () => setIsTemplateManagerOpen(true) : undefined}
+            onOpenTemplateManager={!isReadOnly ? () => setIsTemplateManagerOpen(true) : undefined}
             onShareFunnel={!isReadOnly ? () => setIsShareDialogOpen(true) : undefined}
             isReadOnly={isReadOnly}
           />

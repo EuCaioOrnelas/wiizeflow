@@ -122,7 +122,7 @@ const SharedFunnel = () => {
         .insert({
           user_id: currentUser.id,
           name: `Template: ${funnelData.name}`,
-          canvas_data: funnelData.canvas_data
+          canvas_data: funnelData.canvas_data as any
         });
 
       if (error) {

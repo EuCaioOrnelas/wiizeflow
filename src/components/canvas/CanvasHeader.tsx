@@ -141,19 +141,6 @@ export const CanvasHeader = ({
               </Button>
             </div>
 
-            {/* Share button */}
-            {onShareFunnel && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onShareFunnel}
-                title="Compartilhar Visualização"
-              >
-                <Share2 className="w-4 h-4" />
-                Compartilhar
-              </Button>
-            )}
-
             {/* Templates */}
             {onOpenTemplateManager && (
               <Button
@@ -164,6 +151,19 @@ export const CanvasHeader = ({
               >
                 <FolderOpen className="w-4 h-4" />
                 Templates
+              </Button>
+            )}
+
+            {/* Share button */}
+            {onShareFunnel && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onShareFunnel}
+                title="Compartilhar Visualização"
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar
               </Button>
             )}
 

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { Handle, Position } from '@xyflow/react';
-import { NodeProps, CustomNodeData } from '@/types/canvas';
+import { Handle, Position, NodeProps } from '@xyflow/react';
+import { CustomNodeData } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -21,23 +22,30 @@ interface CustomNodeProps extends NodeProps {
   data: CustomNodeData;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
   isReadOnly?: boolean;
+  isConnectable?: boolean;
 }
 
 export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: CustomNodeProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [nodeName, setNodeName] = useState(data.label || '');
-  const [nodeContent, setNodeContent] = useState(data.content || '');
-  const [showHandle, setShowHandle] = useState(data.showHandle || false);
-  const [elementName, setElementName] = useState(data.elementName || 'Botão');
+  const [nodeContent, setNodeContent] = useState(
+    typeof data.content === 'string' ? data.content : 
+    data.content?.description || ''
+  );
+  const [showHandle, setShowHandle] = useState(Boolean(data.showHandle));
+  const [elementName, setElementName] = useState(String(data.elementName || 'Botão'));
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     // Update local state when data changes from outside
     setNodeName(data.label || '');
-    setNodeContent(data.content || '');
-    setShowHandle(data.showHandle || false);
-    setElementName(data.elementName || 'Botão');
+    setNodeContent(
+      typeof data.content === 'string' ? data.content : 
+      data.content?.description || ''
+    );
+    setShowHandle(Boolean(data.showHandle));
+    setElementName(String(data.elementName || 'Botão'));
   }, [data]);
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,8 +60,8 @@ export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: Cu
     setElementName(event.target.value);
   };
 
-  const handleShowHandleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setShowHandle(event.target.checked);
+  const handleShowHandleChange = (checked: boolean) => {
+    setShowHandle(checked);
   };
 
   const handleSave = () => {
@@ -67,7 +75,7 @@ export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: Cu
     }
 
     if (onUpdateNode) {
-      onUpdateNode(data.id, { 
+      onUpdateNode(String(data.id), { 
         label: nodeName, 
         content: nodeContent, 
         showHandle: showHandle,
@@ -81,17 +89,40 @@ export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: Cu
     setIsDialogOpen(false);
     // Reset local state to the last known good values
     setNodeName(data.label || '');
-    setNodeContent(data.content || '');
-    setShowHandle(data.showHandle || false);
-    setElementName(data.elementName || 'Botão');
+    setNodeContent(
+      typeof data.content === 'string' ? data.content : 
+      data.content?.description || ''
+    );
+    setShowHandle(Boolean(data.showHandle));
+    setElementName(String(data.elementName || 'Botão'));
+  };
+
+  const renderContent = () => {
+    if (typeof data.content === 'string' && data.content) {
+      return (
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {data.content}
+        </p>
+      );
+    }
+    
+    if (data.content && typeof data.content === 'object' && data.content.description) {
+      return (
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {data.content.description}
+        </p>
+      );
+    }
+    
+    return null;
   };
 
   return (
     <>
-      <div className={`custom-node ${data.nodeType}`}>
+      <div className={`custom-node ${data.nodeType || ''}`}>
         <div className="node-header">
           <div className="node-name">
-            {data.icon && <span className="mr-1">{data.icon}</span>}
+            {data.icon && <span className="mr-1">{String(data.icon)}</span>}
             {data.label}
           </div>
           {!isReadOnly && (
@@ -109,11 +140,7 @@ export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: Cu
         </div>
 
         <div className="node-content">
-          {data.content && (
-            <p className="text-xs text-gray-600 dark:text-gray-300">
-              {data.content}
-            </p>
-          )}
+          {renderContent()}
         </div>
         
         {/* Link display - sempre exibir se houver link */}
@@ -121,7 +148,7 @@ export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: Cu
           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
             <span className="text-blue-600 font-medium">Link:</span>
             <br />
-            <span className="text-blue-800 break-all">{data.link}</span>
+            <span className="text-blue-800 break-all">{String(data.link)}</span>
           </div>
         )}
       </div>

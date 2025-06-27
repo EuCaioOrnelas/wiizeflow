@@ -8,13 +8,19 @@ export interface NodeContent {
 }
 
 export interface CustomNodeData extends Record<string, unknown> {
+  id: string;
   label: string;
   type: string;
-  content: NodeContent | null;
+  content: NodeContent | string | null;
   hasContent: boolean;
-  customIcon?: string; // For emoji
-  customColor?: string; // For icon background color
-  nodeColor?: string; // For node background color
+  customIcon?: string;
+  customColor?: string;
+  nodeColor?: string;
+  nodeType?: string;
+  icon?: string;
+  elementName?: string;
+  showHandle?: boolean;
+  link?: string;
 }
 
 export interface CanvasState {
@@ -37,8 +43,8 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  category?: string; // Added for TemplateManager compatibility
-  icon?: React.ReactNode; // Added for TemplateManager compatibility
+  category?: string;
+  icon?: React.ReactNode;
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
   createdAt: string;

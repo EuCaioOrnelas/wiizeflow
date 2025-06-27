@@ -35,12 +35,13 @@ export const AdvancedContentEditor = ({
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (node.data.content) {
-      setTitle(node.data.content.title || '');
-      setDescription(node.data.content.description || '');
+    if (node.data.content && typeof node.data.content === 'object') {
+      const content = node.data.content as NodeContent;
+      setTitle(content.title || '');
+      setDescription(content.description || '');
       
       // Convert existing items to new format if needed
-      const items = node.data.content.items || [];
+      const items = content.items || [];
       const formattedItems = items.map((item: any, index: number) => {
         // Check if item is already in new format
         if (item.type && item.id) {
@@ -55,6 +56,11 @@ export const AdvancedContentEditor = ({
         };
       });
       setContentItems(formattedItems);
+    } else {
+      // Handle string content or null
+      setTitle('');
+      setDescription(typeof node.data.content === 'string' ? node.data.content : '');
+      setContentItems([]);
     }
     setElementName(node.data.label);
   }, [node, isOpen]);

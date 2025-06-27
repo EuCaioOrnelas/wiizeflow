@@ -22,7 +22,7 @@ interface CustomNodeProps extends NodeProps {
   data: CustomNodeData;
   onUpdateNode?: (nodeId: string, updates: Partial<CustomNodeData>) => void;
   isReadOnly?: boolean;
-  isConnectable?: boolean;
+  isConnectable: boolean; // Made required to match NodeProps
 }
 
 export const CustomNode = ({ data, isConnectable, onUpdateNode, isReadOnly }: CustomNodeProps) => {

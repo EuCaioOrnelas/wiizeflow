@@ -327,6 +327,17 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      process_stripe_webhook: {
+        Args: {
+          event_type: string
+          customer_email: string
+          customer_id: string
+          subscription_id: string
+          price_id: string
+          session_id?: string
+        }
+        Returns: Json
+      }
       sync_existing_users: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -334,6 +345,10 @@ export type Database = {
       validate_password_strength: {
         Args: { password: string }
         Returns: boolean
+      }
+      verify_payment_status: {
+        Args: { session_id_param: string }
+        Returns: Json
       }
     }
     Enums: {

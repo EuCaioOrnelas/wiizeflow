@@ -77,13 +77,11 @@ export const useCanvasOperations = ({
   };
 
   const addNode = useCallback((type: string, position: { x: number; y: number }) => {
-    const newId = `node-${Date.now()}`;
     const newNode: Node<CustomNodeData> = {
-      id: newId,
+      id: `node-${Date.now()}`,
       type: 'custom',
       position,
       data: {
-        id: newId,
         label: getNodeLabel(type),
         type,
         content: null,

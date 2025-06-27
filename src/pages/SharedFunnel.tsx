@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -128,7 +129,7 @@ const SharedFunnel = () => {
         name: funnel.name,
         canvas_data: canvasData,
         owner_name: ownerName,
-        allow_download: shareData.allow_download
+        allow_download: true // Sempre permitir download conforme solicitado
       });
 
     } catch (error) {
@@ -145,10 +146,19 @@ const SharedFunnel = () => {
   };
 
   const downloadAsTemplate = async () => {
-    if (!funnelData || !currentUser) {
+    if (!funnelData) {
       toast({
         title: "Erro",
-        description: "Você precisa estar logado para baixar templates.",
+        description: "Dados do funil não encontrados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para baixar templates. Faça login e tente novamente.",
         variant: "destructive",
       });
       return;
@@ -249,19 +259,18 @@ const SharedFunnel = () => {
             </div>
           </div>
 
-          {/* Botão de download (apenas se permitido e usuário logado) */}
-          {funnelData.allow_download && currentUser && (
-            <Button 
-              onClick={downloadAsTemplate}
-              disabled={downloading}
-              variant="outline"
-              size={isMobile ? "sm" : "default"}
-              className="flex-shrink-0 ml-2"
-            >
-              <Download className="w-4 h-4 mr-1 md:mr-2" />
-              {isMobile ? 'Baixar' : (downloading ? 'Baixando...' : 'Baixar Template')}
-            </Button>
-          )}
+          {/* Botão de download - sempre disponível se usuário logado */}
+          <Button 
+            onClick={downloadAsTemplate}
+            disabled={downloading}
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            className="flex-shrink-0 ml-2"
+            style={{ backgroundColor: 'rgb(6, 214, 160)', color: 'white' }}
+          >
+            <Download className="w-4 h-4 mr-1 md:mr-2" />
+            {isMobile ? 'Baixar' : (downloading ? 'Baixando...' : 'Baixar Template')}
+          </Button>
         </div>
         
         {/* Nome do proprietário em mobile */}

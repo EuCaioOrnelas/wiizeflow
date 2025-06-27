@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Target, LogOut, Edit3, User, CreditCard, Trash2, Check, X } from "lucide-react";
+import { Plus, Target, LogOut, Edit3, User, CreditCard, Trash2, Check, X, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
@@ -23,6 +23,9 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
+  const [filteredFunnels, setFilteredFunnels] = useState<Funnel[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [displayLimit, setDisplayLimit] = useState(6);
   const [loading, setLoading] = useState(true);
   const [creatingFunnel, setCreatingFunnel] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -62,6 +65,19 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Filtrar funis baseado no termo de busca
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredFunnels(funnels);
+    } else {
+      const filtered = funnels.filter(funnel =>
+        funnel.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredFunnels(filtered);
+    }
+    setDisplayLimit(6); // Reset limit when searching
+  }, [funnels, searchTerm]);
 
   const loadUserData = async (userId: string) => {
     try {
@@ -336,6 +352,17 @@ const Dashboard = () => {
     return profile?.plan_type !== 'free';
   };
 
+  const showUpgradeButton = () => {
+    return profile?.plan_type === 'free';
+  };
+
+  const handleLoadMore = () => {
+    setDisplayLimit(prev => prev + 6);
+  };
+
+  const displayedFunnels = filteredFunnels.slice(0, displayLimit);
+  const hasMoreFunnels = filteredFunnels.length > displayLimit;
+
   if (loading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
@@ -412,10 +439,12 @@ const Dashboard = () => {
             <CardContent>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-bold">{getPlanName(profile.plan_type)}</span>
-                <Button onClick={handleUpgrade} size="sm" variant="outline">
-                  <CreditCard className="w-4 h-4 mr-1" />
-                  Upgrade
-                </Button>
+                {showUpgradeButton() && (
+                  <Button onClick={handleUpgrade} size="sm" variant="outline">
+                    <CreditCard className="w-4 h-4 mr-1" />
+                    Upgrade
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -451,6 +480,27 @@ const Dashboard = () => {
             {creatingFunnel ? 'Criando...' : 'Novo Funil'}
           </Button>
         </div>
+
+        {/* Search Bar */}
+        {funnels.length > 0 && (
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Buscar funis..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {searchTerm && (
+              <p className="text-sm text-gray-600 mt-2">
+                {filteredFunnels.length} funil(s) encontrado(s) para "{searchTerm}"
+              </p>
+            )}
+          </div>
+        )}
 
         {profile.plan_type === 'free' && (
           <div className="bg-gradient-to-r from-blue-500 to-green-600 text-white p-6 rounded-lg mb-8" style={{
@@ -512,88 +562,119 @@ const Dashboard = () => {
               {creatingFunnel ? 'Criando...' : 'Criar Primeiro Funil'}
             </Button>
           </div>
+        ) : filteredFunnels.length === 0 ? (
+          <div className="text-center py-16">
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              Nenhum funil encontrado
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Tente ajustar sua pesquisa ou criar um novo funil
+            </p>
+            <Button 
+              onClick={() => setSearchTerm("")}
+              variant="outline"
+            >
+              Limpar Busca
+            </Button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {funnels.map((funnel) => (
-              <Card key={funnel.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {editingFunnelId === funnel.id ? (
-                      <div className="flex items-center space-x-2 flex-1">
-                        <Input
-                          value={editingFunnelName}
-                          onChange={(e) => setEditingFunnelName(e.target.value)}
-                          className="flex-1"
-                          autoFocus
-                          disabled={isUpdatingName}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => saveFunnelName(funnel.id)}
-                          disabled={isUpdatingName || !editingFunnelName.trim()}
-                          style={{ backgroundColor: 'rgb(6, 214, 160)' }}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={cancelEditingFunnelName}
-                          disabled={isUpdatingName}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <span>{funnel.name}</span>
-                        <div className="flex items-center space-x-2">
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedFunnels.map((funnel) => (
+                <Card key={funnel.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      {editingFunnelId === funnel.id ? (
+                        <div className="flex items-center space-x-2 flex-1">
+                          <Input
+                            value={editingFunnelName}
+                            onChange={(e) => setEditingFunnelName(e.target.value)}
+                            className="flex-1"
+                            autoFocus
+                            disabled={isUpdatingName}
+                          />
                           <Button
-                            variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingFunnelName(funnel);
-                            }}
-                            className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                            onClick={() => saveFunnelName(funnel.id)}
+                            disabled={isUpdatingName || !editingFunnelName.trim()}
+                            style={{ backgroundColor: 'rgb(6, 214, 160)' }}
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Check className="w-4 h-4" />
                           </Button>
                           <Button
-                            variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFunnel(funnel);
-                            }}
-                            className="p-1 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            variant="outline"
+                            onClick={cancelEditingFunnelName}
+                            disabled={isUpdatingName}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </Button>
                         </div>
-                      </>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Criado em {new Date(funnel.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                  <p className="text-gray-500 text-sm mb-4">
-                    {funnel.canvas_data?.nodes?.length || 0} blocos
-                  </p>
-                  <Button 
-                    onClick={() => openFunnel(funnel.id)}
-                    className="w-full"
-                    style={{ backgroundColor: 'rgb(6, 214, 160)' }}
-                    variant="outline"
-                  >
-                    Abrir Funil
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      ) : (
+                        <>
+                          <span>{funnel.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingFunnelName(funnel);
+                              }}
+                              className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFunnel(funnel);
+                              }}
+                              className="p-1 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Criado em {new Date(funnel.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                    <p className="text-gray-500 text-sm mb-4">
+                      {funnel.canvas_data?.nodes?.length || 0} blocos
+                    </p>
+                    <Button 
+                      onClick={() => openFunnel(funnel.id)}
+                      className="w-full"
+                      style={{ backgroundColor: 'rgb(6, 214, 160)' }}
+                      variant="outline"
+                    >
+                      Abrir Funil
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {hasMoreFunnels && (
+              <div className="text-center mt-8">
+                <Button 
+                  onClick={handleLoadMore}
+                  variant="outline"
+                  className="px-8"
+                >
+                  Ver mais funis ({filteredFunnels.length - displayLimit} restantes)
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -1,24 +1,63 @@
 
-import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Users, CreditCard, TrendingUp, LogOut } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Target, 
+  Users, 
+  UserCheck, 
+  DollarSign, 
+  Activity,
+  Crown,
+  CreditCard,
+  Gift,
+  RefreshCw,
+  ArrowLeft,
+  LogOut,
+  Bell
+} from "lucide-react";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
-import { useState } from "react";
 import { PaymentFailuresTable } from "@/components/PaymentFailuresTable";
-import { EngagementMetrics } from "@/components/analytics/EngagementMetrics";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
-  const { stats, loading, isAdmin, logout } = useAdminDashboard();
-  const [showCreateUser, setShowCreateUser] = useState(false);
+  const navigate = useNavigate();
+  const { stats, loading, isAdmin, logout, createUser, refreshStats } = useAdminDashboard();
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/admin-auth');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshStats();
+    setRefreshing(false);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando painel administrativo...</p>
+          <Target className="w-12 h-12 mx-auto mb-4 animate-spin" style={{ color: 'rgb(6, 214, 160)' }} />
+          <p className="text-gray-600 dark:text-gray-400">Carregando painel administrativo...</p>
         </div>
       </div>
     );
@@ -26,12 +65,18 @@ const Admin = () => {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h1>
-          <p className="text-gray-600 mb-6">Você não tem permissão para acessar esta área.</p>
-          <Button onClick={() => window.location.href = '/admin-auth'}>
-            Fazer Login como Admin
+          <Crown className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Acesso Negado
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Você não tem permissão para acessar esta área.
+          </p>
+          <Button onClick={() => navigate('/admin-auth')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Ir para Login Admin
           </Button>
         </div>
       </div>
@@ -39,22 +84,45 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
-            <p className="text-gray-600">WiizeFlow - Gestão e Analytics</p>
-          </div>
           <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowCreateUser(true)}
+            <div className="flex items-center space-x-2">
+              <Target className="w-8 h-8" style={{ color: 'rgb(6, 214, 160)' }} />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">WiizeFlow</span>
+            </div>
+            <Badge variant="secondary" className="bg-green-100 text-green-800" style={{ backgroundColor: 'rgba(6, 214, 160, 0.1)', color: 'rgb(6, 214, 160)' }}>
+              <Crown className="w-3 h-3 mr-1" />
+              Admin
+            </Badge>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <CreateUserDialog onCreateUser={createUser} />
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/avisos')}
+              size="sm"
             >
-              Criar Usuário
+              <Bell className="w-4 h-4 mr-2" />
+              Avisos
             </Button>
-            <Button variant="outline" onClick={logout}>
+            <Button 
+              variant="outline" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao Site
+            </Button>
+            <Button variant="destructive" onClick={logout} size="sm">
               <LogOut className="w-4 h-4 mr-2" />
               Sair
             </Button>
@@ -64,147 +132,189 @@ const Admin = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics Avançados</TabsTrigger>
-            <TabsTrigger value="payments">Pagamentos</TabsTrigger>
-          </TabsList>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Painel Administrativo
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Controle geral da plataforma WiizeFlow
+          </p>
+        </div>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                    {stats?.online_users || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Ativos nos últimos 15min
+        {/* Statistics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Online Users */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
+              <Activity className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
+                {stats?.online_users || 0}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Ativos nos últimos 15 minutos
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Total Users */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats?.total_users || 0}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Usuários registrados
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Revenue */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receita Mensal Projetada</CardTitle>
+              <DollarSign className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
+                {formatCurrency(stats?.projected_monthly_revenue || 0)}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Baseado nos planos ativos
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Plan Distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Free Plan Users */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Plano Gratuito</CardTitle>
+              <Gift className="h-4 w-4 text-gray-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-600">
+                {stats?.free_users || 0}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {stats?.total_users ? 
+                  `${((stats.free_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
+                  '0% dos usuários'
+                }
+              </p>
+              <div className="mt-2">
+                <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                  R$ 0,00/mês
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Plan Users */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Plano Mensal</CardTitle>
+              <CreditCard className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats?.monthly_users || 0}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {stats?.total_users ? 
+                  `${((stats.monthly_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
+                  '0% dos usuários'
+                }
+              </p>
+              <div className="mt-2">
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  R$ 47,00/mês
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Annual Plan Users */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Plano Anual</CardTitle>
+              <Crown className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {stats?.annual_users || 0}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {stats?.total_users ? 
+                  `${((stats.annual_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
+                  '0% dos usuários'
+                }
+              </p>
+              <div className="mt-2">
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  R$ 397,00/ano
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Breakdown */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <DollarSign className="w-5 h-5 mr-2" style={{ color: 'rgb(6, 214, 160)' }} />
+                Detalhamento da Receita
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Mensais</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    {formatCurrency((stats?.monthly_users || 0) * 47.00)}
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {stats?.total_users || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.free_users || 0} gratuitos | {((stats?.monthly_users || 0) + (stats?.annual_users || 0))} pagos
+                  <p className="text-xs text-gray-500">
+                    {stats?.monthly_users || 0} usuários × R$ 47,00
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Assinantes Mensais</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {stats?.monthly_users || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    R$ 47,00/mês cada
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Receita Projetada</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    R$ {stats?.projected_monthly_revenue?.toFixed(2) || '0,00'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Por mês (atual)
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Plan Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição de Planos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-600 mb-2">
-                      {stats?.free_users || 0}
-                    </div>
-                    <div className="text-sm text-gray-500">Plano Gratuito</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-gray-400 h-2 rounded-full" 
-                        style={{ 
-                          width: `${stats?.total_users ? (stats.free_users / stats.total_users) * 100 : 0}%` 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {stats?.monthly_users || 0}
-                    </div>
-                    <div className="text-sm text-gray-500">Plano Mensal</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full" 
-                        style={{ 
-                          width: `${stats?.total_users ? (stats.monthly_users / stats.total_users) * 100 : 0}%` 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      {stats?.annual_users || 0}
-                    </div>
-                    <div className="text-sm text-gray-500">Plano Anual</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full" 
-                        style={{ 
-                          width: `${stats?.total_users ? (stats.annual_users / stats.total_users) * 100 : 0}%` 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Anuais (mensal)</p>
+                  <p className="text-xl font-bold text-yellow-600">
+                    {formatCurrency((stats?.annual_users || 0) * (397.00 / 12))}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {stats?.annual_users || 0} usuários × R$ 33,08
+                  </p>
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal</p>
+                  <p className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
+                    {formatCurrency(stats?.projected_monthly_revenue || 0)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Receita recorrente mensal
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="analytics">
-            <EngagementMetrics />
-          </TabsContent>
-
-          <TabsContent value="payments">
-            <PaymentFailuresTable />
-          </TabsContent>
-        </Tabs>
+        {/* Payment Failures Table */}
+        <PaymentFailuresTable />
       </main>
-
-      <CreateUserDialog 
-        isOpen={showCreateUser}
-        onClose={() => setShowCreateUser(false)}
-      />
     </div>
   );
 };

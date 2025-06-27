@@ -117,9 +117,6 @@ const Dashboard = () => {
 
       setFunnels(funnelsData || []);
 
-      // Registrar evento de dashboard_view
-      logUserEvent('dashboard_view');
-
     } catch (error) {
       console.error('Error loading user data:', error);
       toast({
@@ -127,23 +124,6 @@ const Dashboard = () => {
         description: "Erro ao carregar dados do usuário.",
         variant: "destructive",
       });
-    }
-  };
-
-  // Função para registrar eventos de usuário
-  const logUserEvent = async (eventType: string, eventData: any = {}) => {
-    try {
-      if (!user) return;
-
-      await supabase
-        .from('user_events')
-        .insert({
-          user_id: user.id,
-          event_type: eventType,
-          event_data: eventData
-        });
-    } catch (error) {
-      console.error('Error logging user event:', error);
     }
   };
 
@@ -261,20 +241,14 @@ const Dashboard = () => {
   };
 
   const openFunnel = (funnelId: string) => {
-    // Registrar evento de abertura de funil
-    logUserEvent('funnel_opened', { funnel_id: funnelId });
     navigate(`/builder/${funnelId}`);
   };
 
   const handleUpgrade = () => {
-    // Registrar evento de interesse em upgrade
-    logUserEvent('upgrade_clicked');
     navigate('/pricing');
   };
 
   const handleAccount = () => {
-    // Registrar evento de acesso à conta
-    logUserEvent('account_accessed');
     navigate('/account');
   };
 

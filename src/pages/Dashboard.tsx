@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useNavigate } from "react-router-dom";
 import { DeleteFunnelDialog } from "@/components/DeleteFunnelDialog";
-import { NotificationBell } from "@/components/NotificationBell";
+import NotificationBell from "@/components/NotificationBell";
 
 interface Funnel {
   id: string;

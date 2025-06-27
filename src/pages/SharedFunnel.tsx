@@ -155,41 +155,60 @@ const SharedFunnel = () => {
       return;
     }
 
-    if (!currentUser) {
-      toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para baixar templates. Faça login e tente novamente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setDownloading(true);
 
     try {
-      // Criar uma cópia do funil como template para o usuário atual
-      const { error } = await supabase
-        .from('funnels')
-        .insert({
-          user_id: currentUser.id,
-          name: `Template: ${funnelData.name}`,
-          canvas_data: funnelData.canvas_data as any
-        });
+      // Se o usuário estiver logado, salvar como funil na conta dele
+      if (currentUser) {
+        const { error } = await supabase
+          .from('funnels')
+          .insert({
+            user_id: currentUser.id,
+            name: `Template: ${funnelData.name}`,
+            canvas_data: funnelData.canvas_data as any
+          });
 
-      if (error) {
-        console.error('Error downloading template:', error);
+        if (error) {
+          console.error('Error downloading template:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao baixar template.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "Erro",
-          description: "Erro ao baixar template.",
-          variant: "destructive",
+          title: "Template baixado!",
+          description: "O template foi salvo em seus funis.",
         });
-        return;
-      }
+      } else {
+        // Se não estiver logado, fazer download do arquivo JSON
+        const templateData = {
+          id: `template-${Date.now()}`,
+          name: funnelData.name,
+          description: `Template importado de ${funnelData.owner_name || 'WiizeFlow'}`,
+          nodes: funnelData.canvas_data.nodes,
+          edges: funnelData.canvas_data.edges,
+          createdAt: new Date().toISOString()
+        };
 
-      toast({
-        title: "Template baixado!",
-        description: "O template foi salvo em seus funis.",
-      });
+        const dataStr = JSON.stringify(templateData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${funnelData.name}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "Template baixado!",
+          description: "Arquivo JSON baixado com sucesso. Você pode importá-lo após fazer login.",
+        });
+      }
 
     } catch (error) {
       console.error('Error downloading template:', error);
@@ -259,7 +278,7 @@ const SharedFunnel = () => {
             </div>
           </div>
 
-          {/* Botão de download - sempre disponível se usuário logado */}
+          {/* Botão de download - sempre disponível */}
           <Button 
             onClick={downloadAsTemplate}
             disabled={downloading}

@@ -7,10 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Layout, 
-  Users, 
-  Target, 
-  Download, 
   Crown,
   Lock,
   Save,
@@ -31,11 +27,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface LocalTemplate extends Template {
-  category: string;
-  icon: React.ReactNode;
-}
-
 interface TemplateManagerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -55,7 +46,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
-  const [activeTab, setActiveTab] = useState<'predefined' | 'custom'>('predefined');
   const { toast } = useToast();
   const { saveTemplate, loadTemplates, deleteTemplate, exportTemplate, importTemplate } = useTemplateOperations();
 
@@ -88,106 +78,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     setUserTemplates(templates);
   };
 
-  const predefinedTemplates: LocalTemplate[] = [
-    {
-      id: 'sales-funnel',
-      name: 'Funil de Vendas Básico',
-      description: 'Template para captura de leads e conversão',
-      category: 'Vendas',
-      icon: <Target className="w-6 h-6" />,
-      createdAt: new Date().toISOString(),
-      nodes: [
-        {
-          id: 'landing',
-          type: 'custom',
-          position: { x: 100, y: 100 },
-          data: { 
-            label: 'Página de Captura',
-            type: 'custom',
-            content: {
-              title: 'Oferta Especial',
-              description: 'Descubra como aumentar suas vendas',
-              items: []
-            },
-            hasContent: true
-          }
-        },
-        {
-          id: 'thanks',
-          type: 'custom', 
-          position: { x: 100, y: 300 },
-          data: {
-            label: 'Página de Obrigado',
-            type: 'custom',
-            content: {
-              title: 'Obrigado!',
-              description: 'Verifique seu email',
-              items: []
-            },
-            hasContent: true
-          }
-        }
-      ],
-      edges: [
-        {
-          id: 'landing-thanks',
-          source: 'landing',
-          target: 'thanks',
-          type: 'smoothstep'
-        }
-      ]
-    },
-    {
-      id: 'lead-magnet',
-      name: 'Funil Lead Magnet',
-      description: 'Captura de leads com material gratuito',
-      category: 'Marketing',
-      icon: <Download className="w-6 h-6" />,
-      createdAt: new Date().toISOString(),
-      nodes: [
-        {
-          id: 'opt-in',
-          type: 'custom',
-          position: { x: 100, y: 100 },
-          data: {
-            label: 'Opt-in',
-            type: 'custom',
-            content: {
-              title: 'Material Gratuito',
-              description: 'Baixe nosso guia exclusivo',
-              items: []
-            },
-            hasContent: true
-          }
-        },
-        {
-          id: 'delivery',
-          type: 'custom',
-          position: { x: 100, y: 300 },
-          data: {
-            label: 'Entrega',
-            type: 'custom',
-            content: {
-              title: 'Download',
-              description: 'Seu material está pronto',
-              items: []
-            },
-            hasContent: true
-          }
-        }
-      ],
-      edges: [
-        {
-          id: 'opt-delivery',
-          source: 'opt-in',
-          target: 'delivery',
-          type: 'smoothstep'
-        }
-      ]
-    }
-  ];
-
-  const handleLoadTemplate = async (template: LocalTemplate | Template) => {
+  const handleLoadTemplate = async (template: Template) => {
     if (userPlan === 'free') {
       toast({
         title: "Recurso Premium",
@@ -300,13 +191,13 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Gerenciar Templates</DialogTitle>
+            <DialogTitle>Meus Templates</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6">
             <div className="text-center">
               <p className="text-gray-600">
-                Acelere a criação dos seus funis com templates profissionais
+                Gerencie seus templates personalizados salvos
               </p>
               {isPremiumFeature && (
                 <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
@@ -320,34 +211,8 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
               )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-4 border-b">
-              <button
-                onClick={() => setActiveTab('predefined')}
-                className={`pb-2 px-4 font-medium ${
-                  activeTab === 'predefined'
-                    ? 'border-b-2 border-green-500 text-green-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Templates Predefinidos
-              </button>
-              <button
-                onClick={() => setActiveTab('custom')}
-                className={`pb-2 px-4 font-medium ${
-                  activeTab === 'custom'
-                    ? 'border-b-2 border-green-500 text-green-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-                disabled={isPremiumFeature}
-              >
-                Meus Templates
-                {isPremiumFeature && <Lock className="w-3 h-3 ml-1 inline" />}
-              </button>
-            </div>
-
-            {/* Custom Templates Actions */}
-            {activeTab === 'custom' && !isPremiumFeature && (
+            {/* Actions */}
+            {!isPremiumFeature && (
               <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={() => setShowSaveDialog(true)}
@@ -377,46 +242,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
             {/* Templates Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeTab === 'predefined' && predefinedTemplates.map((template) => (
-                <Card key={template.id} className={`relative ${isPremiumFeature ? 'opacity-75' : ''}`}>
-                  {isPremiumFeature && (
-                    <div className="absolute top-3 right-3 z-10">
-                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                        <Lock className="w-3 h-3 mr-1" />
-                        Premium
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      {template.icon}
-                      <span>{template.name}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">{template.description}</p>
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline">{template.category}</Badge>
-                      <Button
-                        onClick={() => handleLoadTemplate(template)}
-                        disabled={loading || isPremiumFeature}
-                        size="sm"
-                      >
-                        {isPremiumFeature ? (
-                          <>
-                            <Lock className="w-4 h-4 mr-2" />
-                            Restrito
-                          </>
-                        ) : (
-                          'Usar Template'
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {activeTab === 'custom' && !isPremiumFeature && userTemplates.map((template) => (
+              {!isPremiumFeature && userTemplates.map((template) => (
                 <Card key={template.id}>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
@@ -460,7 +286,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                 </Card>
               ))}
 
-              {activeTab === 'custom' && !isPremiumFeature && userTemplates.length === 0 && (
+              {!isPremiumFeature && userTemplates.length === 0 && (
                 <div className="col-span-full text-center py-8">
                   <Save className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-600 mb-2">

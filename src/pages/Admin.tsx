@@ -23,29 +23,11 @@ import { CreateUserDialog } from "@/components/CreateUserDialog";
 import { PaymentFailuresTable } from "@/components/PaymentFailuresTable";
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Página principal do dashboard administrativo do WiizeFlow
- * 
- * Funcionalidades:
- * - Exibição de estatísticas em tempo real
- * - Criação de novos usuários
- * - Visualização de falhas de pagamento
- * - Controle de acesso para administradores
- * - Navegação para outras seções administrativas
- */
 const Admin = () => {
   const navigate = useNavigate();
-  
-  // Hook personalizado para gerenciar dados do dashboard admin
   const { stats, loading, isAdmin, logout, createUser, refreshStats } = useAdminDashboard();
-  
-  // Estado para controlar indicador visual durante atualização manual
   const [refreshing, setRefreshing] = useState(false);
 
-  /**
-   * Effect para verificar autenticação quando a página carrega
-   * Redireciona para login se não houver sessão ativa
-   */
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -57,21 +39,12 @@ const Admin = () => {
     checkAuth();
   }, [navigate]);
 
-  /**
-   * Manipula a atualização manual das estatísticas
-   * Mostra indicador visual durante o processo
-   */
   const handleRefresh = async () => {
     setRefreshing(true);
     await refreshStats();
     setRefreshing(false);
   };
 
-  /**
-   * Formata valores monetários para exibição em Real brasileiro
-   * @param value - Valor numérico a ser formatado
-   * @returns String formatada em moeda brasileira
-   */
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -79,7 +52,6 @@ const Admin = () => {
     }).format(value);
   };
 
-  // Tela de carregamento enquanto verifica permissões e carrega dados
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -91,7 +63,6 @@ const Admin = () => {
     );
   }
 
-  // Tela de acesso negado para usuários não-admin
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -114,10 +85,9 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Cabeçalho da página administrativa */}
+      {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          {/* Logo e badge de identificação */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Target className="w-8 h-8" style={{ color: 'rgb(6, 214, 160)' }} />
@@ -129,12 +99,8 @@ const Admin = () => {
             </Badge>
           </div>
           
-          {/* Barra de ações do cabeçalho */}
           <div className="flex items-center space-x-4">
-            {/* Botão para criar novo usuário */}
             <CreateUserDialog onCreateUser={createUser} />
-            
-            {/* Botão para gerenciar avisos */}
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin/avisos')}
@@ -143,8 +109,6 @@ const Admin = () => {
               <Bell className="w-4 h-4 mr-2" />
               Avisos
             </Button>
-            
-            {/* Botão para atualizar dados manualmente */}
             <Button 
               variant="outline" 
               onClick={handleRefresh}
@@ -154,14 +118,10 @@ const Admin = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            
-            {/* Botão para voltar ao site principal */}
             <Button variant="outline" onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar ao Site
             </Button>
-            
-            {/* Botão de logout */}
             <Button variant="destructive" onClick={logout} size="sm">
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -170,9 +130,8 @@ const Admin = () => {
         </div>
       </header>
 
-      {/* Conteúdo principal da página */}
+      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Título e descrição da página */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Painel Administrativo
@@ -182,9 +141,9 @@ const Admin = () => {
           </p>
         </div>
 
-        {/* Grade de estatísticas principais */}
+        {/* Statistics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Card: Usuários Online */}
+          {/* Online Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
@@ -200,7 +159,7 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Card: Total de Usuários */}
+          {/* Total Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
@@ -216,7 +175,7 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Card: Receita Mensal Projetada */}
+          {/* Monthly Revenue */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Receita Mensal Projetada</CardTitle>
@@ -233,9 +192,9 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Grade de distribuição por planos */}
+        {/* Plan Distribution */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Card: Plano Gratuito */}
+          {/* Free Plan Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Plano Gratuito</CardTitle>
@@ -259,7 +218,7 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Card: Plano Mensal */}
+          {/* Monthly Plan Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Plano Mensal</CardTitle>
@@ -283,7 +242,7 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Card: Plano Anual */}
+          {/* Annual Plan Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Plano Anual</CardTitle>
@@ -308,7 +267,7 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Seção de detalhamento da receita */}
+        {/* Revenue Breakdown */}
         <div className="mb-8">
           <Card>
             <CardHeader>
@@ -319,7 +278,6 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Receita dos Planos Mensais */}
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Mensais</p>
                   <p className="text-xl font-bold text-blue-600">
@@ -330,7 +288,6 @@ const Admin = () => {
                   </p>
                 </div>
                 
-                {/* Receita dos Planos Anuais (convertida para mensal) */}
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Anuais (mensal)</p>
                   <p className="text-xl font-bold text-yellow-600">
@@ -341,7 +298,6 @@ const Admin = () => {
                   </p>
                 </div>
                 
-                {/* Total da Receita Mensal */}
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal</p>
                   <p className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
@@ -356,7 +312,7 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Tabela de falhas de pagamento */}
+        {/* Payment Failures Table */}
         <PaymentFailuresTable />
       </main>
     </div>

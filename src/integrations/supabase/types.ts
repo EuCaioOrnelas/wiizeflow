@@ -269,6 +269,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           created_at: string
@@ -321,6 +345,19 @@ export type Database = {
           monthly_users: number
           annual_users: number
           projected_monthly_revenue: number
+        }[]
+      }
+      get_engagement_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          dau: number
+          wau: number
+          mau: number
+          users_with_funnels: number
+          total_active_users: number
+          freemium_to_paid_rate: number
+          retention_30_days: number
+          monthly_churn_rate: number
         }[]
       }
       is_admin: {

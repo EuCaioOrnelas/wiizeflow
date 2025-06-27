@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const usePayment = () => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,6 @@ export const usePayment = () => {
     console.log('Starting payment process with priceId:', priceId);
     console.log('Customer email provided:', customerEmail);
     
-    // Prevenir múltiplas chamadas simultâneas
     if (loading) {
       console.log('Payment already in progress, ignoring duplicate request');
       return;
@@ -25,7 +25,6 @@ export const usePayment = () => {
     setError(null);
 
     try {
-      // Se não foi fornecido email, tentar pegar do usuário logado
       let finalEmail = customerEmail;
       if (!finalEmail) {
         const user = await getCurrentUser();
@@ -38,9 +37,8 @@ export const usePayment = () => {
       console.log('Final email for checkout:', finalEmail);
       console.log('Calling Supabase function create-payment...');
       
-      // Fazer a chamada para a edge function com timeout otimizado
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       const { data, error: functionError } = await supabase.functions.invoke('create-payment', {
         body: {
@@ -69,9 +67,11 @@ export const usePayment = () => {
       console.error('Error creating payment:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao processar pagamento';
       setError(errorMessage);
-      setLoading(false); // Só resetar loading em caso de erro
+      toast.error('Erro no pagamento', {
+        description: errorMessage
+      });
+      setLoading(false);
     }
-    // Não resetar loading em caso de sucesso, pois o usuário será redirecionado
   };
 
   return {

@@ -3,50 +3,70 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { usePaymentVerification } from '@/hooks/usePaymentVerification';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { verifyPayment, loading } = usePaymentVerification();
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error'>('pending');
-  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const sessionId = searchParams.get('session_id');
 
-  useEffect(() => {
-    const handlePaymentVerification = async () => {
-      if (!sessionId) {
-        setVerificationStatus('error');
-        return;
-      }
+  const handlePaymentVerification = async () => {
+    if (!sessionId) {
+      setVerificationStatus('error');
+      return;
+    }
 
-      try {
-        const isConfirmed = await verifyPayment(sessionId);
-        if (isConfirmed) {
-          setVerificationStatus('success');
-          // Refresh user session to get updated profile
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            // Force refresh of user profile
-            window.location.reload();
-          }
+    try {
+      console.log('Attempting payment verification, try:', retryCount + 1);
+      const isConfirmed = await verifyPayment(sessionId);
+      
+      if (isConfirmed) {
+        setVerificationStatus('success');
+        // Refresh user session to get updated profile
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.auth.refreshSession();
+        }
+      } else {
+        // Se não foi confirmado e ainda não tentamos muitas vezes, tentar novamente
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 2000); // Tentar novamente em 2 segundos
         } else {
           setVerificationStatus('error');
         }
-      } catch (error) {
-        console.error('Payment verification failed:', error);
+      }
+    } catch (error) {
+      console.error('Payment verification failed:', error);
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+        }, 2000);
+      } else {
         setVerificationStatus('error');
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     handlePaymentVerification();
-  }, [sessionId, verifyPayment]);
+  }, [sessionId, retryCount]);
 
   const handleContinue = () => {
     navigate('/dashboard');
+  };
+
+  const handleRetry = () => {
+    setVerificationStatus('pending');
+    setRetryCount(0);
   };
 
   if (!sessionId) {
@@ -77,7 +97,10 @@ const PaymentSuccess = () => {
           {verificationStatus === 'pending' && (
             <>
               <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
-              <CardTitle className="text-blue-600">Verificando Pagamento</CardTitle>
+              <CardTitle className="text-blue-600">
+                Verificando Pagamento
+                {retryCount > 0 && ` (Tentativa ${retryCount + 1}/4)`}
+              </CardTitle>
             </>
           )}
           
@@ -90,17 +113,24 @@ const PaymentSuccess = () => {
           
           {verificationStatus === 'error' && (
             <>
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <CardTitle className="text-red-600">Erro na Verificação</CardTitle>
+              <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+              <CardTitle className="text-yellow-600">Verificação Pendente</CardTitle>
             </>
           )}
         </CardHeader>
         
         <CardContent className="text-center">
           {verificationStatus === 'pending' && (
-            <p className="text-gray-600 mb-4">
-              Aguarde enquanto verificamos seu pagamento...
-            </p>
+            <div>
+              <p className="text-gray-600 mb-4">
+                Aguarde enquanto verificamos seu pagamento...
+              </p>
+              {retryCount > 0 && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Às vezes pode levar alguns minutos para o webhook processar.
+                </p>
+              )}
+            </div>
           )}
           
           {verificationStatus === 'success' && (
@@ -117,11 +147,13 @@ const PaymentSuccess = () => {
           {verificationStatus === 'error' && (
             <>
               <p className="text-gray-600 mb-6">
-                Não foi possível verificar seu pagamento automaticamente. Entre em contato conosco se o problema persistir.
+                Seu pagamento foi processado, mas pode levar alguns minutos para ativar. 
+                Se o problema persistir, entre em contato conosco.
               </p>
               <div className="space-y-2">
-                <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-                  Tentar Novamente
+                <Button onClick={handleRetry} variant="outline" className="w-full">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Verificar Novamente
                 </Button>
                 <Button onClick={() => navigate('/dashboard')} className="w-full">
                   Ir para Dashboard

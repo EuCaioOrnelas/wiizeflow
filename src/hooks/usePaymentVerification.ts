@@ -27,6 +27,10 @@ export const usePaymentVerification = () => {
         toast.success('Pagamento confirmado!', {
           description: `Plano ${data.plan_name} ativado com sucesso.`
         });
+        
+        // Força refresh da sessão do usuário para atualizar o plano
+        await supabase.auth.refreshSession();
+        
         return true;
       } else if (data.found && data.status === 'pending') {
         toast.info('Pagamento em processamento', {
@@ -34,8 +38,8 @@ export const usePaymentVerification = () => {
         });
         return false;
       } else {
-        toast.error('Pagamento não encontrado', {
-          description: 'Não foi possível localizar informações sobre este pagamento.'
+        toast.warning('Pagamento não encontrado', {
+          description: 'Verificando com o Stripe... Isso pode levar alguns segundos.'
         });
         return false;
       }

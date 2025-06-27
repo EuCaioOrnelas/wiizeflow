@@ -551,6 +551,19 @@ const InfiniteCanvasInner = ({
     }
   }, [funnelName, toast]);
 
+  // Função para aplicar tipo de linha a todas as conexões existentes
+  const applyEdgeTypeToAll = useCallback(() => {
+    if (isReadOnly) return;
+    
+    setEdges((edges) =>
+      edges.map((edge) => ({
+        ...edge,
+        type: currentEdgeType,
+      }))
+    );
+    saveToHistory();
+  }, [currentEdgeType, setEdges, saveToHistory, isReadOnly]);
+
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">
       {!isMinimized && !isReadOnly && <CanvasSidebar onAddNode={addNode} />}
@@ -623,6 +636,7 @@ const InfiniteCanvasInner = ({
                   <EdgeTypeSelector 
                     currentType={currentEdgeType}
                     onTypeChange={setCurrentEdgeType}
+                    onApplyToAll={applyEdgeTypeToAll}
                   />
                 )}
               </div>

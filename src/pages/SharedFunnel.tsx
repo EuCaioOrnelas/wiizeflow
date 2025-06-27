@@ -129,7 +129,7 @@ const SharedFunnel = () => {
         name: funnel.name,
         canvas_data: canvasData,
         owner_name: ownerName,
-        allow_download: true // Sempre permitir download conforme solicitado
+        allow_download: shareData.allow_download // Usar o valor real do banco
       });
 
     } catch (error) {
@@ -278,18 +278,20 @@ const SharedFunnel = () => {
             </div>
           </div>
 
-          {/* Botão de download - sempre disponível */}
-          <Button 
-            onClick={downloadAsTemplate}
-            disabled={downloading}
-            variant="outline"
-            size={isMobile ? "sm" : "default"}
-            className="flex-shrink-0 ml-2"
-            style={{ backgroundColor: 'rgb(6, 214, 160)', color: 'white' }}
-          >
-            <Download className="w-4 h-4 mr-1 md:mr-2" />
-            {isMobile ? 'Baixar' : (downloading ? 'Baixando...' : 'Baixar Template')}
-          </Button>
+          {/* Botão de download - apenas se permitido */}
+          {funnelData.allow_download && (
+            <Button 
+              onClick={downloadAsTemplate}
+              disabled={downloading}
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+              className="flex-shrink-0 ml-2"
+              style={{ backgroundColor: 'rgb(6, 214, 160)', color: 'white' }}
+            >
+              <Download className="w-4 h-4 mr-1 md:mr-2" />
+              {isMobile ? 'Baixar' : (downloading ? 'Baixando...' : 'Baixar Template')}
+            </Button>
+          )}
         </div>
         
         {/* Nome do proprietário em mobile */}

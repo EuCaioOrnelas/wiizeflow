@@ -28,6 +28,7 @@ export const EdgeTypeSelector = ({ currentType, onTypeChange, onApplyToAll }: Ed
 
   const handleTypeChange = (type: EdgeType) => {
     onTypeChange(type);
+    // Aplicar mudança a todas as conexões existentes
     if (onApplyToAll) {
       onApplyToAll();
     }

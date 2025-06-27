@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -188,6 +189,23 @@ const InfiniteCanvasInner = ({
       <CustomNode {...props} onUpdateNode={isReadOnly ? undefined : handleUpdateNode} isReadOnly={isReadOnly} />
     ),
   };
+
+  // Função para aplicar tipo de linha a todas as edges existentes
+  const applyEdgeTypeToAll = useCallback(() => {
+    setEdges((currentEdges) =>
+      currentEdges.map((edge) => ({
+        ...edge,
+        type: currentEdgeType,
+        animated: true,
+        style: { stroke: '#10b981', strokeWidth: 2 },
+      }))
+    );
+    saveToHistory();
+    toast({
+      title: "Tipo de linha aplicado!",
+      description: "O novo tipo de linha foi aplicado a todas as conexões existentes.",
+    });
+  }, [currentEdgeType, setEdges, saveToHistory, toast]);
 
   // Template operations
   const handleLoadTemplate = useCallback((nodes: Node<CustomNodeData>[], edges: Edge[]) => {
@@ -623,6 +641,7 @@ const InfiniteCanvasInner = ({
                   <EdgeTypeSelector 
                     currentType={currentEdgeType}
                     onTypeChange={setCurrentEdgeType}
+                    onApplyToAll={applyEdgeTypeToAll}
                   />
                 )}
               </div>

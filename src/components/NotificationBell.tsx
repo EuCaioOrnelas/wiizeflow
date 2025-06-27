@@ -44,10 +44,36 @@ const NotificationBell = () => {
     }
   };
 
+  // Carregar avisos automaticamente ao montar o componente
+  useEffect(() => {
+    loadAvisos();
+  }, []);
+
+  // Configurar realtime para novos avisos
+  useEffect(() => {
+    const channel = supabase
+      .channel('avisos-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'avisos'
+        },
+        (payload) => {
+          console.log('Aviso change detected:', payload);
+          // Recarregar avisos quando houver mudanças
+          loadAvisos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleBellClick = () => {
-    if (!showPopup) {
-      loadAvisos();
-    }
     setShowPopup(!showPopup);
   };
 
@@ -96,7 +122,7 @@ const NotificationBell = () => {
         <Bell className="w-5 h-5" />
         {avisos.length > 0 && (
           <Badge 
-            className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs"
+            className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs animate-pulse"
             style={{ backgroundColor: 'rgb(6, 214, 160)', color: 'white' }}
           >
             {avisos.length > 9 ? '9+' : avisos.length}

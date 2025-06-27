@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 
 interface Aviso {
   id: string;
@@ -33,10 +32,10 @@ interface Aviso {
 const AdminAvisos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: adminLoading, logout } = useAdminDashboard();
   
-  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [creating, setCreating] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -47,17 +46,30 @@ const AdminAvisos = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/admin-auth');
+        return;
       }
+
+      // Verificar se é admin
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', session.user.id)
+        .single();
+
+      const isAdminUser = profileData?.email === 'adminwiize@wiizeflow.com.br' || 
+                         profileData?.email === 'admin@wiizeflow.com.br';
+      
+      setIsAdmin(isAdminUser);
+      
+      if (isAdminUser) {
+        loadAvisos();
+      }
+      
+      setLoading(false);
     };
     
     checkAuth();
   }, [navigate]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadAvisos();
-    }
-  }, [isAdmin]);
 
   const loadAvisos = async () => {
     try {
@@ -84,8 +96,6 @@ const AdminAvisos = () => {
         description: "Erro inesperado ao carregar avisos.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -216,7 +226,12 @@ const AdminAvisos = () => {
     }
   };
 
-  if (adminLoading || loading) {
+  const logout = async () => {
+    await supabase.auth.signOut();
+    navigate('/admin-auth');
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

@@ -17,9 +17,23 @@ interface Aviso {
 
 const NotificationBell = () => {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [readAvisos, setReadAvisos] = useState<Set<string>>(new Set());
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Carregar avisos lidos do localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('readAvisos');
+    if (stored) {
+      setReadAvisos(new Set(JSON.parse(stored)));
+    }
+  }, []);
+
+  // Salvar avisos lidos no localStorage
+  const saveReadAvisos = (readSet: Set<string>) => {
+    localStorage.setItem('readAvisos', JSON.stringify(Array.from(readSet)));
+  };
 
   const loadAvisos = async () => {
     setLoading(true);
@@ -75,6 +89,16 @@ const NotificationBell = () => {
 
   const handleBellClick = () => {
     setShowPopup(!showPopup);
+    
+    // Marcar todos os avisos como lidos quando o popup for aberto
+    if (!showPopup && avisos.length > 0) {
+      const newReadAvisos = new Set(readAvisos);
+      avisos.forEach(aviso => {
+        newReadAvisos.add(aviso.id);
+      });
+      setReadAvisos(newReadAvisos);
+      saveReadAvisos(newReadAvisos);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -111,6 +135,9 @@ const NotificationBell = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPopup]);
 
+  // Filtrar avisos não lidos para a contagem
+  const unreadAvisos = avisos.filter(aviso => !readAvisos.has(aviso.id));
+
   return (
     <div className="relative notification-bell-container">
       <Button
@@ -120,12 +147,12 @@ const NotificationBell = () => {
         className="relative"
       >
         <Bell className="w-5 h-5" />
-        {avisos.length > 0 && (
+        {unreadAvisos.length > 0 && (
           <Badge 
             className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs animate-pulse"
             style={{ backgroundColor: 'rgb(6, 214, 160)', color: 'white' }}
           >
-            {avisos.length > 9 ? '9+' : avisos.length}
+            {unreadAvisos.length > 9 ? '9+' : unreadAvisos.length}
           </Badge>
         )}
       </Button>

@@ -23,6 +23,7 @@ import { Node, Edge } from '@xyflow/react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useTemplateOperations } from '@/hooks/useTemplateOperations';
+import { CustomNodeData, Template } from '@/types/canvas';
 import {
   Dialog,
   DialogContent,
@@ -30,22 +31,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface Template {
-  id: string;
-  name: string;
-  description: string;
+interface LocalTemplate extends Template {
   category: string;
-  nodes: Node[];
-  edges: Edge[];
   icon: React.ReactNode;
-  createdAt?: string;
 }
 
 interface TemplateManagerProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoadTemplate: (nodes: Node[], edges: Edge[]) => void;
-  onSaveTemplate: () => { nodes: Node[]; edges: Edge[] };
+  onLoadTemplate: (nodes: Node<CustomNodeData>[], edges: Edge[]) => void;
+  onSaveTemplate: () => { nodes: Node<CustomNodeData>[]; edges: Edge[] };
 }
 
 const TemplateManager: React.FC<TemplateManagerProps> = ({ 
@@ -93,26 +88,28 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     setUserTemplates(templates);
   };
 
-  const predefinedTemplates: Template[] = [
+  const predefinedTemplates: LocalTemplate[] = [
     {
       id: 'sales-funnel',
       name: 'Funil de Vendas Básico',
       description: 'Template para captura de leads e conversão',
       category: 'Vendas',
       icon: <Target className="w-6 h-6" />,
+      createdAt: new Date().toISOString(),
       nodes: [
         {
           id: 'landing',
           type: 'custom',
           position: { x: 100, y: 100 },
           data: { 
-            name: 'Página de Captura',
-            icon: 'Layout',
+            label: 'Página de Captura',
+            type: 'custom',
             content: {
               title: 'Oferta Especial',
               description: 'Descubra como aumentar suas vendas',
               items: []
-            }
+            },
+            hasContent: true
           }
         },
         {
@@ -120,13 +117,14 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
           type: 'custom', 
           position: { x: 100, y: 300 },
           data: {
-            name: 'Página de Obrigado',
-            icon: 'Users',
+            label: 'Página de Obrigado',
+            type: 'custom',
             content: {
               title: 'Obrigado!',
               description: 'Verifique seu email',
               items: []
-            }
+            },
+            hasContent: true
           }
         }
       ],
@@ -145,19 +143,21 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
       description: 'Captura de leads com material gratuito',
       category: 'Marketing',
       icon: <Download className="w-6 h-6" />,
+      createdAt: new Date().toISOString(),
       nodes: [
         {
           id: 'opt-in',
           type: 'custom',
           position: { x: 100, y: 100 },
           data: {
-            name: 'Opt-in',
-            icon: 'Download',
+            label: 'Opt-in',
+            type: 'custom',
             content: {
               title: 'Material Gratuito',
               description: 'Baixe nosso guia exclusivo',
               items: []
-            }
+            },
+            hasContent: true
           }
         },
         {
@@ -165,13 +165,14 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
           type: 'custom',
           position: { x: 100, y: 300 },
           data: {
-            name: 'Entrega',
-            icon: 'Layout',
+            label: 'Entrega',
+            type: 'custom',
             content: {
               title: 'Download',
               description: 'Seu material está pronto',
               items: []
-            }
+            },
+            hasContent: true
           }
         }
       ],
@@ -186,7 +187,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     }
   ];
 
-  const handleLoadTemplate = async (template: Template) => {
+  const handleLoadTemplate = async (template: LocalTemplate | Template) => {
     if (userPlan === 'free') {
       toast({
         title: "Recurso Premium",

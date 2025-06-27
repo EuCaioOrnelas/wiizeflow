@@ -37,6 +37,8 @@ export interface Template {
   id: string;
   name: string;
   description: string;
+  category?: string; // Added for TemplateManager compatibility
+  icon?: React.ReactNode; // Added for TemplateManager compatibility
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
   createdAt: string;

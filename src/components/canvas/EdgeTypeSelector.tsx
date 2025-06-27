@@ -13,13 +13,13 @@ interface EdgeTypeSelectorProps {
 export const EdgeTypeSelector = ({ currentType, onTypeChange, onApplyToAll }: EdgeTypeSelectorProps) => {
   const edgeTypes: { type: EdgeType; name: string; icon: React.ReactNode; description: string }[] = [
     { 
-      type: 'straight', 
+      type: 'default', 
       name: 'Reto', 
       icon: <Minus className="w-4 h-4" />, 
       description: 'Linha reta' 
     },
     { 
-      type: 'default', 
+      type: 'straight', 
       name: 'Curvado', 
       icon: <Workflow className="w-4 h-4" />, 
       description: 'Linha curva suave' 

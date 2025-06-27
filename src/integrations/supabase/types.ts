@@ -36,6 +36,36 @@ export type Database = {
         }
         Relationships: []
       }
+      avisos: {
+        Row: {
+          ativo: boolean
+          created_by: string | null
+          data_criacao: string
+          descricao: string
+          id: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_by?: string | null
+          data_criacao?: string
+          descricao: string
+          id?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_by?: string | null
+          data_criacao?: string
+          descricao?: string
+          id?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funnel_shares: {
         Row: {
           allow_download: boolean

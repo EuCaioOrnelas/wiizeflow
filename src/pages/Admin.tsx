@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   Gift,
   RefreshCw,
   ArrowLeft,
-  LogOut
+  LogOut,
+  Bell
 } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
@@ -99,6 +101,14 @@ const Admin = () => {
           
           <div className="flex items-center space-x-4">
             <CreateUserDialog onCreateUser={createUser} />
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/avisos')}
+              size="sm"
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              Avisos
+            </Button>
             <Button 
               variant="outline" 
               onClick={handleRefresh}

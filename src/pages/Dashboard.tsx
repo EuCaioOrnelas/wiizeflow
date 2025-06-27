@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useNavigate } from "react-router-dom";
 import { DeleteFunnelDialog } from "@/components/DeleteFunnelDialog";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Funnel {
   id: string;
@@ -363,6 +365,7 @@ const Dashboard = () => {
               Plano {getPlanName(profile.plan_type)}
             </div>
             <span className="text-gray-600">Olá, {profile.name || user.email}!</span>
+            <NotificationBell />
             <Button variant="outline" onClick={handleAccount} size="sm">
               <User className="w-4 h-4 mr-2" />
               Conta

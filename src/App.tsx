@@ -17,6 +17,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Admin from "./pages/Admin";
 import AdminAuth from "./pages/AdminAuth";
+import AdminAvisos from "./pages/AdminAvisos";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/admin-auth" element={<AdminAuth />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/avisos" element={<AdminAvisos />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-canceled" element={<PaymentCanceled />} />
             <Route path="/shared/:shareToken" element={<SharedFunnel />} />

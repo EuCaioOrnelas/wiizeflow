@@ -43,33 +43,57 @@ const AdminAvisos = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate('/admin-auth');
+          return;
+        }
+
+        // Verificar se é admin através do perfil
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error checking profile:', profileError);
+          toast({
+            title: "Erro",
+            description: "Erro ao verificar permissões.",
+            variant: "destructive",
+          });
+          navigate('/admin-auth');
+          return;
+        }
+
+        const isAdminUser = profileData?.email === 'adminwiize@wiizeflow.com.br' || 
+                           profileData?.email === 'admin@wiizeflow.com.br';
+        
+        setIsAdmin(isAdminUser);
+        
+        if (isAdminUser) {
+          await loadAvisos();
+        } else {
+          toast({
+            title: "Acesso Negado",
+            description: "Você não tem permissão para acessar esta área.",
+            variant: "destructive",
+          });
+          navigate('/admin-auth');
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error in auth check:', error);
+        setLoading(false);
         navigate('/admin-auth');
-        return;
       }
-
-      // Verificar se é admin
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', session.user.id)
-        .single();
-
-      const isAdminUser = profileData?.email === 'adminwiize@wiizeflow.com.br' || 
-                         profileData?.email === 'admin@wiizeflow.com.br';
-      
-      setIsAdmin(isAdminUser);
-      
-      if (isAdminUser) {
-        loadAvisos();
-      }
-      
-      setLoading(false);
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const loadAvisos = async () => {
     try {
@@ -82,7 +106,7 @@ const AdminAvisos = () => {
         console.error('Error loading avisos:', error);
         toast({
           title: "Erro",
-          description: "Erro ao carregar avisos.",
+          description: "Erro ao carregar avisos: " + error.message,
           variant: "destructive",
         });
         return;
@@ -119,14 +143,15 @@ const AdminAvisos = () => {
         .insert({
           titulo: titulo.trim(),
           descricao: descricao.trim(),
-          created_by: user?.id || null
+          created_by: user?.id || null,
+          ativo: true
         });
 
       if (error) {
         console.error('Error creating aviso:', error);
         toast({
           title: "Erro",
-          description: "Erro ao criar aviso.",
+          description: "Erro ao criar aviso: " + error.message,
           variant: "destructive",
         });
         return;
@@ -140,7 +165,7 @@ const AdminAvisos = () => {
       setTitulo("");
       setDescricao("");
       setShowForm(false);
-      loadAvisos();
+      await loadAvisos();
 
     } catch (error) {
       console.error('Error creating aviso:', error);
@@ -165,7 +190,7 @@ const AdminAvisos = () => {
         console.error('Error updating aviso:', error);
         toast({
           title: "Erro",
-          description: "Erro ao atualizar status do aviso.",
+          description: "Erro ao atualizar status do aviso: " + error.message,
           variant: "destructive",
         });
         return;
@@ -176,7 +201,7 @@ const AdminAvisos = () => {
         description: `Aviso ${!currentStatus ? 'ativado' : 'desativado'} com sucesso.`,
       });
 
-      loadAvisos();
+      await loadAvisos();
 
     } catch (error) {
       console.error('Error updating aviso:', error);
@@ -203,7 +228,7 @@ const AdminAvisos = () => {
         console.error('Error deleting aviso:', error);
         toast({
           title: "Erro",
-          description: "Erro ao excluir aviso.",
+          description: "Erro ao excluir aviso: " + error.message,
           variant: "destructive",
         });
         return;
@@ -214,7 +239,7 @@ const AdminAvisos = () => {
         description: "Aviso excluído com sucesso.",
       });
 
-      loadAvisos();
+      await loadAvisos();
 
     } catch (error) {
       console.error('Error deleting aviso:', error);

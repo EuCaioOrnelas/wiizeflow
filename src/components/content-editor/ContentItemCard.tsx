@@ -106,37 +106,6 @@ export const ContentItemCard = ({
           </div>
         );
 
-      case 'link':
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">
-                {getTypeLabel(item.type)}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                className="text-red-500 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                value={item.content}
-                onChange={(e) => onUpdate({ content: e.target.value })}
-                placeholder="Texto do link..."
-              />
-              <Input
-                value={item.url || ''}
-                onChange={(e) => onUpdate({ url: e.target.value })}
-                placeholder="URL do link..."
-              />
-            </div>
-          </div>
-        );
-
       case 'list':
       case 'checklist':
         return (

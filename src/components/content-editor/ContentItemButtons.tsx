@@ -4,7 +4,6 @@ import {
   Type,
   List,
   CheckSquare,
-  Link,
 } from 'lucide-react';
 import { ContentItem } from '@/types/contentEditor';
 
@@ -34,10 +33,6 @@ export const ContentItemButtons = ({ onAddItem }: ContentItemButtonsProps) => {
       <Button size="sm" variant="outline" onClick={() => onAddItem('checklist')}>
         <CheckSquare className="w-4 h-4 mr-2" />
         Checklist
-      </Button>
-      <Button size="sm" variant="outline" onClick={() => onAddItem('link')}>
-        <Link className="w-4 h-4 mr-2" />
-        Link
       </Button>
     </div>
   );

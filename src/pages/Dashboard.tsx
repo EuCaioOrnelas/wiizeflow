@@ -651,9 +651,8 @@ const Dashboard = () => {
                     </p>
                     <Button 
                       onClick={() => openFunnel(funnel.id)}
-                      className="w-full"
+                      className="w-full text-white hover:text-white"
                       style={{ backgroundColor: 'rgb(6, 214, 160)' }}
-                      variant="outline"
                     >
                       Abrir Funil
                     </Button>

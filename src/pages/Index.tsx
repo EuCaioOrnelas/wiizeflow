@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -145,7 +144,7 @@ const Index = () => {
               Preços
             </Button>
             <Button 
-              className="bg-[rgb(6,214,160)] hover:bg-[#FFD166] text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+              className="bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
               onClick={() => window.location.href = '/auth'}
             >
               Comece Agora
@@ -188,7 +187,7 @@ const Index = () => {
               Preços
             </Button>
             <Button 
-              className="w-full bg-[rgb(6,214,160)] hover:bg-[#FFD166] text-white"
+              className="w-full bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
               onClick={() => window.location.href = '/auth'}
             >
               Comece Agora
@@ -223,7 +222,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                   size="lg"
-                  className="bg-[rgb(6,214,160)] hover:bg-[#05c394] text-white font-semibold px-8 py-3 rounded-lg"
+                  className="bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-8 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
                   onClick={() => window.location.href = '/auth'}
                 >
                   Criar Meu Funil de Vendas Grátis
@@ -231,7 +230,7 @@ const Index = () => {
                 <Button 
                   size="lg"
                   variant="outline"
-                  className="border-[rgb(6,214,160)] text-[rgb(6,214,160)] hover:bg-[#F4FDF9] px-8 py-3 rounded-lg"
+                  className="border-2 border-[rgb(6,214,160)] text-[rgb(6,214,160)] hover:bg-[rgb(6,214,160)] hover:text-white font-semibold px-8 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
                   onClick={() => scrollToSection('demo')}
                 >
                   <Play className="w-5 h-5 mr-2" />
@@ -284,13 +283,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Demonstração */}
+      {/* Demonstração - Video maior */}
       <section id="demo" className="py-16 bg-[#F9FAFB]">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-[#2B2D42] mb-8">
             Veja como funciona na prática
           </h2>
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-8">
               <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                 <iframe 
@@ -606,7 +605,7 @@ const Index = () => {
                   <Button 
                     onClick={() => plan.priceId === 'free' ? window.location.href = '/auth' : handlePlanClick(plan.priceId)}
                     disabled={loading}
-                    className="w-full bg-[rgb(6,214,160)] hover:bg-[#05c394] text-white"
+                    className="w-full bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
                   >
                     {loading ? "Processando..." : plan.buttonText}
                   </Button>
@@ -638,7 +637,7 @@ const Index = () => {
           </p>
           <Button 
             size="lg"
-            className="bg-[rgb(6,214,160)] hover:bg-[#05c394] text-white font-semibold px-8 py-3 rounded-lg"
+            className="bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-8 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
             onClick={() => window.location.href = '/auth'}
           >
             Começar Gratuitamente
@@ -657,7 +656,7 @@ const Index = () => {
           </p>
           <Button 
             size="lg"
-            className="bg-[#FFD166] hover:bg-[#ffd04d] text-[#2B2D42] font-bold px-8 py-3 rounded-lg"
+            className="bg-white hover:bg-gray-100 text-[rgb(6,214,160)] font-bold px-8 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
             onClick={() => window.location.href = '/auth'}
           >
             Criar Funil Agora
@@ -771,7 +770,7 @@ const Index = () => {
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 <span className="sr-only">Instagram</span>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M12.017 0H7.982C3.58 0 0 3.583 0 7.987v4.03C0 16.42 3.583 20 7.987 20h4.03C16.42 20 20 16.417 20 12.017V7.987C20 3.583 16.417 0 12.017 0zM10 15a5 5 0 110-10 5 5 0 010 10zm6.408-10.845a1.44 1.44 0 110-2.881 1.44 1.44 0 010 2.881z"/>
+                  <path fillRule="evenodd" d="M12.017 0H7.982C3.58 0 0 3.583 0 7.987v4.03C0 16.42 3.583 20 7.987 20h4.03C16.42 20 20 16.417 20 12.017V7.987C20 3.583 16.417 0 12.017 0zm6.408-10.845a1.44 1.44 0 110-2.881 1.44 1.44 0 010 2.881z"/>
                 </svg>
               </a>
             </div>

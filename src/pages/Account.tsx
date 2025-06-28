@@ -8,6 +8,7 @@ import { Target, LogOut, Camera, CreditCard, Upload, MessageCircle, Mail } from 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import Footer from "@/components/Footer";
 
 const Account = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -16,8 +17,10 @@ const Account = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -119,6 +122,24 @@ const Account = () => {
   };
 
   const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos de senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (newPassword.length < 6) {
       toast({
         title: "Erro",
@@ -128,31 +149,38 @@ const Account = () => {
       return;
     }
 
+    setChangingPassword(true);
+
     try {
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
       if (error) {
+        console.error('Password change error:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível alterar a senha.",
+          description: error.message || "Não foi possível alterar a senha.",
           variant: "destructive",
         });
         return;
       }
 
       setNewPassword('');
+      setConfirmPassword('');
       toast({
         title: "Senha alterada",
         description: "Sua senha foi atualizada com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Password change error:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível alterar a senha.",
+        description: error.message || "Não foi possível alterar a senha.",
         variant: "destructive",
       });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -286,7 +314,7 @@ const Account = () => {
   const supportInfo = getSupportInfo();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -312,7 +340,7 @@ const Account = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Minha Conta</h1>
 
@@ -385,17 +413,29 @@ const Account = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="password">Nova Senha</Label>
-                    <div className="flex space-x-2 mt-1">
+                    <Label htmlFor="password">Alterar Senha</Label>
+                    <div className="space-y-3 mt-1">
                       <Input
                         id="password"
                         type="password"
-                        placeholder="Digite sua nova senha"
+                        placeholder="Nova senha"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
-                      <Button onClick={handleChangePassword} size="sm" className="bg-green-600 hover:bg-green-700">
-                        Alterar
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirmar nova senha"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                      <Button 
+                        onClick={handleChangePassword} 
+                        size="sm" 
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={changingPassword}
+                      >
+                        {changingPassword ? 'Alterando...' : 'Alterar Senha'}
                       </Button>
                     </div>
                   </div>
@@ -482,6 +522,8 @@ const Account = () => {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

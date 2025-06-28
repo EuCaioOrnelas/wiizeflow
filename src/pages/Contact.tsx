@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,7 @@ const Contact = () => {
   }, []);
 
   const handleEmailSupport = () => {
-    window.location.href = 'mailto:suporte@wiizeflow.com?subject=Solicitação de Suporte - WiizeFlow';
+    window.location.href = 'mailto:wiizeflow@gmail.com?subject=Solicitação de Suporte - WiizeFlow';
   };
 
   const handleWhatsApp = () => {
@@ -54,7 +53,7 @@ const Contact = () => {
       answer: "Sim! Você pode exportar seus funis em alta qualidade como PDF, PNG ou compartilhar online com um link. Todos os planos incluem essa funcionalidade."
     },
     {
-      question: "Oferecem suporte em português?",
+      question: "Oferece suporte em português?",
       answer: "Sim! Nosso suporte é 100% em português brasileiro. Temos uma equipe especializada que pode ajudar via email, chat ou videochamada, dependendo do seu plano."
     },
     {
@@ -99,7 +98,10 @@ const Contact = () => {
             <Button variant="ghost" onClick={() => window.location.href = '/dashboard'}>
               Dashboard
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/auth'}>
+            <Button 
+              className="bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
+              onClick={() => window.location.href = '/auth'}
+            >
               Login
             </Button>
           </div>
@@ -131,7 +133,10 @@ const Contact = () => {
                 <p className="text-gray-600 mb-6">
                   Envie suas dúvidas por email e nossa equipe responderá em até 24 horas.
                 </p>
-                <Button onClick={handleEmailSupport} className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  onClick={handleEmailSupport} 
+                  className="w-full bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
+                >
                   Enviar Email
                 </Button>
               </CardContent>
@@ -147,7 +152,10 @@ const Contact = () => {
                   <p className="text-gray-600 mb-6">
                     Suporte prioritário via WhatsApp para usuários logados.
                   </p>
-                  <Button onClick={handleWhatsApp} className="w-full bg-green-600 hover:bg-green-700">
+                  <Button 
+                    onClick={handleWhatsApp} 
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
+                  >
                     Abrir WhatsApp
                   </Button>
                 </CardContent>
@@ -178,17 +186,17 @@ const Contact = () => {
               <div>
                 <Mail className="w-8 h-8 text-blue-600 mx-auto mb-3" />
                 <h3 className="font-semibold text-gray-900 mb-2">Email Geral</h3>
-                <p className="text-gray-600">contato@wiizeflow.com</p>
+                <p className="text-gray-600">wiizeflow@gmail.com</p>
               </div>
               <div>
                 <Users className="w-8 h-8 text-green-600 mx-auto mb-3" />
                 <h3 className="font-semibold text-gray-900 mb-2">Vendas</h3>
-                <p className="text-gray-600">vendas@wiizeflow.com</p>
+                <p className="text-gray-600">wiizeflow@gmail.com</p>
               </div>
               <div>
                 <Shield className="w-8 h-8 text-purple-600 mx-auto mb-3" />
                 <h3 className="font-semibold text-gray-900 mb-2">Suporte Técnico</h3>
-                <p className="text-gray-600">suporte@wiizeflow.com</p>
+                <p className="text-gray-600">wiizeflow@gmail.com</p>
               </div>
             </div>
           </div>
@@ -228,7 +236,11 @@ const Contact = () => {
               <p className="text-blue-700 mb-6">
                 Nossa equipe de suporte está pronta para ajudar você com qualquer dúvida específica.
               </p>
-              <Button onClick={handleEmailSupport} size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={handleEmailSupport} 
+                size="lg" 
+                className="bg-[rgb(6,214,160)] hover:bg-[rgb(5,195,148)] text-white font-semibold px-8 py-3 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:scale-105"
+              >
                 Falar com Suporte
               </Button>
             </div>
@@ -293,10 +305,10 @@ const Contact = () => {
               </p>
               <div className="space-y-2">
                 <p className="text-gray-300">
-                  <strong>Vendas:</strong> vendas@wiizeflow.com
+                  <strong>Vendas:</strong> wiizeflow@gmail.com
                 </p>
                 <p className="text-gray-300">
-                  <strong>Suporte:</strong> suporte@wiizeflow.com
+                  <strong>Suporte:</strong> wiizeflow@gmail.com
                 </p>
               </div>
             </div>

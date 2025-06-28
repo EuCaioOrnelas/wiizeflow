@@ -227,6 +227,7 @@ export type Database = {
           cookies_accepted: boolean | null
           created_at: string | null
           email: string | null
+          exclude_from_revenue: boolean | null
           funnel_count: number | null
           id: string
           name: string | null
@@ -242,6 +243,7 @@ export type Database = {
           cookies_accepted?: boolean | null
           created_at?: string | null
           email?: string | null
+          exclude_from_revenue?: boolean | null
           funnel_count?: number | null
           id: string
           name?: string | null
@@ -257,6 +259,7 @@ export type Database = {
           cookies_accepted?: boolean | null
           created_at?: string | null
           email?: string | null
+          exclude_from_revenue?: boolean | null
           funnel_count?: number | null
           id?: string
           name?: string | null
@@ -266,6 +269,66 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_status?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      track_events: {
+        Row: {
+          bloco_id: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          referrer: string | null
+          timestamp: string
+          tipo: string
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          bloco_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          referrer?: string | null
+          timestamp?: string
+          tipo: string
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          bloco_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          referrer?: string | null
+          timestamp?: string
+          tipo?: string
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      user_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -302,16 +365,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      create_admin_user: {
-        Args: {
-          user_email: string
-          user_password: string
-          user_name: string
-          plan_type: string
-          subscription_period?: string
-        }
-        Returns: Json
-      }
       get_admin_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -323,8 +376,38 @@ export type Database = {
           projected_monthly_revenue: number
         }[]
       }
+      get_block_tracking_stats: {
+        Args: { block_id: string }
+        Returns: {
+          tipo: string
+          count: number
+          last_event: string
+        }[]
+      }
+      get_engagement_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          dau: number
+          wau: number
+          mau: number
+          users_with_funnels: number
+          total_active_users: number
+          freemium_to_paid_rate: number
+          retention_30_days: number
+          monthly_churn_rate: number
+        }[]
+      }
       is_admin: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      is_duplicate_event: {
+        Args: {
+          block_id: string
+          event_type: string
+          client_ip: unknown
+          time_window?: unknown
+        }
         Returns: boolean
       }
       process_stripe_webhook: {

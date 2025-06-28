@@ -129,16 +129,11 @@ export const useAdminDashboard = () => {
     try {
       console.log('Loading dashboard stats...');
       
-      // Sincronizar usuários existentes do auth para profiles
-      await supabase.rpc('sync_existing_users');
-      
-      // Carregar todos os profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('plan_type, subscription_status, subscription_expires_at, created_at');
+      // Usar a função get_admin_dashboard_stats que já filtra usuários excluídos
+      const { data: statsData, error } = await supabase.rpc('get_admin_dashboard_stats');
 
-      if (profilesError) {
-        console.error('Error loading profiles:', profilesError);
+      if (error) {
+        console.error('Error loading dashboard stats:', error);
         setStats({
           online_users: 1,
           total_users: 0,
@@ -150,51 +145,27 @@ export const useAdminDashboard = () => {
         return;
       }
 
-      console.log('Loaded profiles:', profiles);
-
-      // Contar usuários online (considerando atividade nos últimos 15 minutos)
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('user_sessions')
-        .select('user_id')
-        .gte('last_activity', new Date(Date.now() - 15 * 60 * 1000).toISOString());
-
-      const onlineUsers = sessionsError ? 1 : Math.max((sessions?.length || 0), 1);
-
-      // Filtrar apenas usuários com assinaturas ativas ou que não expiraram
-      const activeProfiles = profiles?.filter(p => {
-        if (p.plan_type === 'free') return true;
-        if (p.subscription_status && p.subscription_status !== 'active') {
-          // Se status não é ativo, verificar se não expirou ainda
-          if (p.subscription_expires_at) {
-            return new Date(p.subscription_expires_at) > new Date();
-          }
-          return false;
-        }
-        if (p.subscription_expires_at) {
-          return new Date(p.subscription_expires_at) > new Date();
-        }
-        return true;
-      }) || [];
-
-      const totalUsers = profiles?.length || 0;
-      const freeUsers = activeProfiles.filter(p => p.plan_type === 'free').length;
-      const monthlyUsers = activeProfiles.filter(p => p.plan_type === 'monthly').length;
-      const annualUsers = activeProfiles.filter(p => p.plan_type === 'annual').length;
-      
-      // Calcular receita projetada: Mensal R$ 47,00 e Anual R$ 397,00 (33,08/mês)
-      const projectedRevenue = (monthlyUsers * 47.00) + (annualUsers * (397.00 / 12));
-
-      const newStats = {
-        online_users: onlineUsers,
-        total_users: totalUsers,
-        free_users: freeUsers,
-        monthly_users: monthlyUsers,
-        annual_users: annualUsers,
-        projected_monthly_revenue: projectedRevenue,
-      };
-
-      console.log('Calculated stats:', newStats);
-      setStats(newStats);
+      if (statsData && statsData.length > 0) {
+        const stats = statsData[0];
+        console.log('Dashboard stats loaded:', stats);
+        setStats({
+          online_users: stats.online_users || 1,
+          total_users: stats.total_users || 0,
+          free_users: stats.free_users || 0,
+          monthly_users: stats.monthly_users || 0,
+          annual_users: stats.annual_users || 0,
+          projected_monthly_revenue: stats.projected_monthly_revenue || 0,
+        });
+      } else {
+        setStats({
+          online_users: 1,
+          total_users: 0,
+          free_users: 0,
+          monthly_users: 0,
+          annual_users: 0,
+          projected_monthly_revenue: 0,
+        });
+      }
 
     } catch (error) {
       console.error('Error loading dashboard stats:', error);

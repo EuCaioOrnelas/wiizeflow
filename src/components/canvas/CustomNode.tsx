@@ -30,7 +30,11 @@ import {
   X,
   Users,
   Handshake,
-  UserPlus
+  UserPlus,
+  ClipboardList,
+  UserCheck,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 interface CustomNodeComponentProps extends NodeProps {
@@ -95,6 +99,14 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         return <FileText className="w-4 h-4 text-white" />;
       case 'wait':
         return <Clock className="w-4 h-4 text-white" />;
+      case 'formulario':
+        return <ClipboardList className="w-4 h-4 text-white" />;
+      case 'listacontatos':
+        return <UserCheck className="w-4 h-4 text-white" />;
+      case 'vendafechada':
+        return <CheckCircle className="w-4 h-4 text-white" />;
+      case 'vendaperdida':
+        return <XCircle className="w-4 h-4 text-white" />;
       case 'other':
         return <Plus className="w-4 h-4 text-white" />;
       default:
@@ -150,6 +162,14 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
         return 'bg-indigo-500';
       case 'wait':
         return 'bg-amber-500';
+      case 'formulario':
+        return 'bg-violet-500';
+      case 'listacontatos':
+        return 'bg-blue-700';
+      case 'vendafechada':
+        return 'bg-green-700';
+      case 'vendaperdida':
+        return 'bg-red-700';
       case 'other':
         return 'bg-gray-500';
       default:
@@ -402,6 +422,10 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
            data.type === 'indicacao' ? 'Indicação' :
            data.type === 'text' ? 'Anotação' :
            data.type === 'wait' ? 'Tempo de espera' :
+           data.type === 'formulario' ? 'Formulário' :
+           data.type === 'listacontatos' ? 'Lista de Contatos' :
+           data.type === 'vendafechada' ? 'Venda Fechada' :
+           data.type === 'vendaperdida' ? 'Venda Perdida' :
            data.type === 'other' ? 'Customizado' : data.type}
         </div>
 

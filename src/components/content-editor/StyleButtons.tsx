@@ -13,10 +13,11 @@ interface StyleButtonsProps {
 }
 
 export const StyleButtons = ({ style, onStyleChange }: StyleButtonsProps) => {
-  const toggleStyle = (styleKey: keyof ContentItem['style']) => {
+  const toggleStyle = (styleKey: keyof NonNullable<ContentItem['style']>) => {
+    const currentStyle = style || {};
     const newStyle = {
-      ...style,
-      [styleKey]: !style?.[styleKey]
+      ...currentStyle,
+      [styleKey]: !currentStyle[styleKey]
     };
     onStyleChange(newStyle);
   };

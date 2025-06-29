@@ -13,6 +13,14 @@ interface AdminStats {
   projected_monthly_revenue: number;
 }
 
+interface RevenueDetails {
+  monthly_revenue: number;
+  annual_monthly_revenue: number;
+  total_monthly_revenue: number;
+  monthly_count: number;
+  annual_count: number;
+}
+
 interface CreateUserResponse {
   success?: boolean;
   error?: string;
@@ -22,6 +30,7 @@ interface CreateUserResponse {
 
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [revenueDetails, setRevenueDetails] = useState<RevenueDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
@@ -34,10 +43,12 @@ export const useAdminDashboard = () => {
   useEffect(() => {
     if (isAdmin) {
       loadDashboardStats();
+      loadRevenueDetails();
       checkExpiredSubscriptions();
       // Refresh stats every 30 seconds
       const interval = setInterval(() => {
         loadDashboardStats();
+        loadRevenueDetails();
         checkExpiredSubscriptions();
       }, 30000);
       return () => clearInterval(interval);
@@ -145,7 +156,7 @@ export const useAdminDashboard = () => {
         return;
       }
 
-      if (statsData && statsData.length > 0) {
+      if (statsData && Array.isArray(statsData) && statsData.length > 0) {
         const stats = statsData[0];
         console.log('Dashboard stats loaded:', stats);
         setStats({
@@ -174,6 +185,62 @@ export const useAdminDashboard = () => {
         description: "Erro inesperado ao carregar estatísticas.",
         variant: "destructive",
       });
+    }
+  };
+
+  const loadRevenueDetails = async () => {
+    try {
+      console.log('Loading revenue details...');
+      
+      // Consulta direta para calcular os valores reais da receita
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('plan_type, monthly_amount, annual_amount, exclude_from_revenue, stripe_customer_id')
+        .not('stripe_customer_id', 'is', null)
+        .neq('stripe_customer_id', '')
+        .eq('exclude_from_revenue', false);
+
+      if (profilesError) {
+        console.error('Error loading revenue details:', profilesError);
+        setRevenueDetails({
+          monthly_revenue: 0,
+          annual_monthly_revenue: 0,
+          total_monthly_revenue: 0,
+          monthly_count: 0,
+          annual_count: 0,
+        });
+        return;
+      }
+
+      if (profilesData) {
+        const monthlyUsers = profilesData.filter(user => user.plan_type === 'monthly');
+        const annualUsers = profilesData.filter(user => user.plan_type === 'annual');
+        
+        const monthlyRevenue = monthlyUsers.reduce((sum, user) => sum + (user.monthly_amount || 47.00), 0);
+        const annualMonthlyRevenue = annualUsers.reduce((sum, user) => sum + ((user.annual_amount || 397.00) / 12), 0);
+        
+        const details = {
+          monthly_revenue: monthlyRevenue,
+          annual_monthly_revenue: annualMonthlyRevenue,
+          total_monthly_revenue: monthlyRevenue + annualMonthlyRevenue,
+          monthly_count: monthlyUsers.length,
+          annual_count: annualUsers.length,
+        };
+        
+        console.log('Revenue details loaded:', details);
+        setRevenueDetails(details);
+      } else {
+        setRevenueDetails({
+          monthly_revenue: 0,
+          annual_monthly_revenue: 0,
+          total_monthly_revenue: 0,
+          monthly_count: 0,
+          annual_count: 0,
+        });
+      }
+
+    } catch (error) {
+      console.error('Error loading revenue details:', error);
     }
   };
 
@@ -255,10 +322,14 @@ export const useAdminDashboard = () => {
 
   return {
     stats,
+    revenueDetails,
     loading,
     isAdmin,
     logout,
     createUser,
-    refreshStats: loadDashboardStats
+    refreshStats: () => {
+      loadDashboardStats();
+      loadRevenueDetails();
+    }
   };
 };

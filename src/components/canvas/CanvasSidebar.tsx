@@ -26,7 +26,11 @@ import {
   X,
   Users,
   Handshake,
-  UserPlus
+  UserPlus,
+  ClipboardList,
+  UserCheck,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 const blockCategories = [
@@ -75,6 +79,10 @@ const blockCategories = [
     blocks: [
       { type: 'text', name: 'Anotação', icon: FileText, color: 'bg-indigo-500' },
       { type: 'wait', name: 'Tempo de espera', icon: Clock, color: 'bg-amber-500' },
+      { type: 'formulario', name: 'Formulário', icon: ClipboardList, color: 'bg-violet-500' },
+      { type: 'listacontatos', name: 'Lista de Contatos', icon: UserCheck, color: 'bg-blue-700' },
+      { type: 'vendafechada', name: 'Venda Fechada', icon: CheckCircle, color: 'bg-green-700' },
+      { type: 'vendaperdida', name: 'Venda Perdida', icon: XCircle, color: 'bg-red-700' },
       { type: 'other', name: 'Customizado', icon: Plus, color: 'bg-gray-500' },
     ]
   }

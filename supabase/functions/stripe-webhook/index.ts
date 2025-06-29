@@ -55,6 +55,7 @@ serve(async (req) => {
     let subscriptionId = '';
     let priceId = '';
     let sessionId = '';
+    let amountPaid = null;
 
     // Process different event types
     switch (event.type) {
@@ -63,6 +64,7 @@ serve(async (req) => {
         customerEmail = session.customer_details?.email || '';
         customerId = session.customer || '';
         sessionId = session.id;
+        amountPaid = session.amount_total; // Get the actual amount paid
         
         // Get subscription and price info
         if (session.subscription) {
@@ -76,6 +78,7 @@ serve(async (req) => {
         const invoice = event.data.object;
         customerId = invoice.customer;
         subscriptionId = invoice.subscription || '';
+        amountPaid = invoice.amount_paid; // Get the actual amount paid
         
         // Get customer email
         const customer = await stripe.customers.retrieve(customerId);
@@ -113,17 +116,19 @@ serve(async (req) => {
       customer_id: customerId,
       subscription_id: subscriptionId,
       price_id: priceId,
-      session_id: sessionId
+      session_id: sessionId,
+      amount_paid: amountPaid
     });
 
-    // Call Supabase function to process the webhook
+    // Call Supabase function to process the webhook with amount_paid
     const { data, error } = await supabase.rpc('process_stripe_webhook', {
       event_type: event.type,
       customer_email: customerEmail,
       customer_id: customerId,
       subscription_id: subscriptionId,
       price_id: priceId,
-      session_id: sessionId
+      session_id: sessionId,
+      amount_paid: amountPaid
     });
 
     if (error) {

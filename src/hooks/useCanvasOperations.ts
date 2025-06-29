@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { CustomNodeData, NodeContent } from '@/types/canvas';
@@ -69,6 +70,14 @@ export const useCanvasOperations = ({
         return 'Anotação';
       case 'wait':
         return 'Tempo de espera';
+      case 'formulario':
+        return 'Formulário';
+      case 'listacontatos':
+        return 'Lista de Contatos';
+      case 'vendafechada':
+        return 'Venda Fechada';
+      case 'vendaperdida':
+        return 'Venda Perdida';
       case 'other':
         return 'Customizado';
       default:

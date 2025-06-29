@@ -223,6 +223,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          annual_amount: number | null
           avatar_url: string | null
           cookies_accepted: boolean | null
           created_at: string | null
@@ -230,6 +231,7 @@ export type Database = {
           exclude_from_revenue: boolean | null
           funnel_count: number | null
           id: string
+          monthly_amount: number | null
           name: string | null
           plan_type: string | null
           stripe_customer_id: string | null
@@ -239,6 +241,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          annual_amount?: number | null
           avatar_url?: string | null
           cookies_accepted?: boolean | null
           created_at?: string | null
@@ -246,6 +249,7 @@ export type Database = {
           exclude_from_revenue?: boolean | null
           funnel_count?: number | null
           id: string
+          monthly_amount?: number | null
           name?: string | null
           plan_type?: string | null
           stripe_customer_id?: string | null
@@ -255,6 +259,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          annual_amount?: number | null
           avatar_url?: string | null
           cookies_accepted?: boolean | null
           created_at?: string | null
@@ -262,6 +267,7 @@ export type Database = {
           exclude_from_revenue?: boolean | null
           funnel_count?: number | null
           id?: string
+          monthly_amount?: number | null
           name?: string | null
           plan_type?: string | null
           stripe_customer_id?: string | null

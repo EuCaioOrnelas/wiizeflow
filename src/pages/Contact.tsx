@@ -3,11 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Mail, MessageSquare, Phone, MapPin, Clock, Users, Shield, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from "@/components/Footer";
 
 const Contact = () => {
+  // Estado para armazenar informações do usuário logado
   const [user, setUser] = useState<any>(null);
 
+  // Hook para verificar se o usuário está logado
   useEffect(() => {
+    // Função para verificar se há um usuário logado
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
@@ -15,22 +19,27 @@ const Contact = () => {
     
     checkUser();
 
+    // Listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
     });
 
+    // Cleanup do listener quando o componente for desmontado
     return () => subscription.unsubscribe();
   }, []);
 
+  // Função para abrir cliente de email com assunto pré-definido
   const handleEmailSupport = () => {
     window.location.href = 'mailto:wiizeflow@gmail.com?subject=Solicitação de Suporte - WiizeFlow';
   };
 
+  // Função para abrir WhatsApp com mensagem pré-definida
   const handleWhatsApp = () => {
     const whatsappUrl = 'https://wa.me/5544991487211?text=Olá! Preciso de ajuda com o WiizeFlow.';
     window.open(whatsappUrl, '_blank');
   };
 
+  // Array com perguntas frequentes e suas respostas
   const faqs = [
     {
       question: "Como começar a usar o WiizeFlow?",
@@ -58,7 +67,7 @@ const Contact = () => {
     },
     {
       question: "Como funciona a garantia de 30 dias?",
-      answer: "Se você não ficar satisfeito ou não aumentar suas conversões em 30 dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocacia."
+      answer: "Se você não ficar satisfeito ou não aumentar suas conversões em 30 dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia."
     },
     {
       question: "Posso cancelar minha assinatura a qualquer momento?",
@@ -84,7 +93,7 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
+      {/* Cabeçalho fixo com navegação */}
       <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -108,7 +117,7 @@ const Contact = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Seção principal de apresentação */}
       <section className="bg-gradient-to-br from-blue-50 via-white to-indigo-100 py-16">
         <div className="container mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -120,7 +129,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Contact Options */}
+      {/* Seções de opções de contato */}
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
@@ -180,7 +189,7 @@ const Contact = () => {
             </Card>
           </div>
 
-          {/* Contact Info */}
+          {/* Contato Info */}
           <div className="bg-gray-50 rounded-xl p-8 mb-16">
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <div>
@@ -203,7 +212,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* Seção de perguntas frequentes */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
@@ -248,7 +257,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Success Stories */}
+      {/* Seção de histórias de sucesso/benefícios */}
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
@@ -291,54 +300,8 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <Target className="w-8 h-8 text-blue-400" />
-                <span className="text-2xl font-bold">WiizeFlow</span>
-              </div>
-              <p className="text-gray-300 mb-4 leading-relaxed">
-                A primeira plataforma brasileira para criar funis de vendas visuais e profissionais.
-              </p>
-              <div className="space-y-2">
-                <p className="text-gray-300">
-                  <strong>Vendas:</strong> wiizeflow@gmail.com
-                </p>
-                <p className="text-gray-300">
-                  <strong>Suporte:</strong> wiizeflow@gmail.com
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Links Úteis</h3>
-              <ul className="space-y-2">
-                <li><a href="/" className="text-gray-300 hover:text-blue-400 transition-colors">Início</a></li>
-                <li><a href="/pricing" className="text-gray-300 hover:text-blue-400 transition-colors">Planos</a></li>
-                <li><a href="/dashboard" className="text-gray-300 hover:text-blue-400 transition-colors">Dashboard</a></li>
-                <li><a href="/account" className="text-gray-300 hover:text-blue-400 transition-colors">Minha Conta</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><a href="/terms" className="text-gray-300 hover:text-blue-400 transition-colors">Termos de Uso</a></li>
-                <li><a href="/privacy" className="text-gray-300 hover:text-blue-400 transition-colors">Política de Privacidade</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-700 pt-8 text-center">
-            <p className="text-gray-400">
-              © {new Date().getFullYear()} WiizeFlow. Todos os direitos reservados.
-            </p>
-          </div>
-        </div>
-      </footer>
+      {/* Componente Footer reutilizado da página Index */}
+      <Footer />
     </div>
   );
 };

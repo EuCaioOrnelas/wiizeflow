@@ -25,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { stats, loading, isAdmin, logout, createUser, refreshStats } = useAdminDashboard();
+  const { stats, revenueDetails, loading, isAdmin, logout, createUser, refreshStats } = useAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -175,18 +175,18 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Monthly Revenue */}
+          {/* Monthly Revenue - Updated to show real values */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receita Mensal Projetada</CardTitle>
+              <CardTitle className="text-sm font-medium">Receita Mensal Real</CardTitle>
               <DollarSign className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                {formatCurrency(stats?.projected_monthly_revenue || 0)}
+                {formatCurrency(revenueDetails?.total_monthly_revenue || stats?.projected_monthly_revenue || 0)}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Baseado nos planos ativos
+                Valores reais pagos pelos clientes
               </p>
             </CardContent>
           </Card>
@@ -210,11 +210,6 @@ const Admin = () => {
                   '0% dos usuários'
                 }
               </p>
-              <div className="mt-2">
-                <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                  R$ 0,00/mês
-                </Badge>
-              </div>
             </CardContent>
           </Card>
 
@@ -234,11 +229,6 @@ const Admin = () => {
                   '0% dos usuários'
                 }
               </p>
-              <div className="mt-2">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  R$ 47,00/mês
-                </Badge>
-              </div>
             </CardContent>
           </Card>
 
@@ -258,11 +248,6 @@ const Admin = () => {
                   '0% dos usuários'
                 }
               </p>
-              <div className="mt-2">
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                  R$ 397,00/ano
-                </Badge>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -273,7 +258,7 @@ const Admin = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <DollarSign className="w-5 h-5 mr-2" style={{ color: 'rgb(6, 214, 160)' }} />
-                Detalhamento da Receita
+                Detalhamento da Receita (Valores Reais)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -281,30 +266,30 @@ const Admin = () => {
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Mensais</p>
                   <p className="text-xl font-bold text-blue-600">
-                    {formatCurrency((stats?.monthly_users || 0) * 47.00)}
+                    {formatCurrency(revenueDetails?.monthly_revenue || 0)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {stats?.monthly_users || 0} usuários × R$ 47,00
+                    {revenueDetails?.monthly_count || 0} usuários - valores reais pagos
                   </p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Anuais (mensal)</p>
                   <p className="text-xl font-bold text-yellow-600">
-                    {formatCurrency((stats?.annual_users || 0) * (397.00 / 12))}
+                    {formatCurrency(revenueDetails?.annual_monthly_revenue || 0)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {stats?.annual_users || 0} usuários × R$ 33,08
+                    {revenueDetails?.annual_count || 0} usuários - valores reais pagos
                   </p>
                 </div>
                 
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal Real</p>
                   <p className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                    {formatCurrency(stats?.projected_monthly_revenue || 0)}
+                    {formatCurrency(revenueDetails?.total_monthly_revenue || stats?.projected_monthly_revenue || 0)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Receita recorrente mensal
+                    Receita recorrente real (com descontos)
                   </p>
                 </div>
               </div>

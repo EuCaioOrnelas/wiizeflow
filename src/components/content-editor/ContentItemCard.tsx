@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StyleButtons } from './StyleButtons';
 import { ListItemEditor } from './ListItemEditor';
+import { RichTextEditor } from './RichTextEditor';
 import { Trash2, Plus } from 'lucide-react';
 
 interface ContentItemCardProps {
@@ -33,8 +34,7 @@ export const ContentItemCard = ({
       subtitle: 'Legendas',
       paragraph: 'Parágrafo',
       list: 'Lista',
-      checklist: 'Lista de Verificação',
-      link: 'Link'
+      checklist: 'Lista de Verificação'
     };
     return labels[type];
   };
@@ -81,26 +81,19 @@ export const ContentItemCard = ({
               <span className="text-sm font-medium text-gray-600">
                 {getTypeLabel(item.type)}
               </span>
-              <div className="flex items-center space-x-2">
-                <StyleButtons
-                  style={item.style || {}}
-                  onStyleChange={(style) => onUpdate({ style })}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRemove}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
-            <Textarea
-              value={item.content}
-              onChange={(e) => onUpdate({ content: e.target.value })}
+            <RichTextEditor
+              content={item.content}
+              onChange={(content) => onUpdate({ content })}
               placeholder="Digite o parágrafo..."
-              rows={3}
               className="w-full"
             />
           </div>

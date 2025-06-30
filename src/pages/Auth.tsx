@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { Target, Eye, EyeOff, CheckCircle, XCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from '@supabase/supabase-js';
@@ -17,6 +17,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const { toast } = useToast();
 
   // Validação de senha forte
@@ -31,17 +33,119 @@ const Auth = () => {
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
 
   useEffect(() => {
+    // Verificar se há parâmetros de confirmação na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const type = urlParams.get('type');
+    const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+
+    if (error) {
+      console.error('Auth error from URL:', error, errorDescription);
+      toast({
+        title: "Erro de confirmação",
+        description: errorDescription || "Ocorreu um erro durante a confirmação do email.",
+        variant: "destructive",
+      });
+      // Limpar a URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (token && type === 'signup') {
+      console.log('Email confirmation detected, processing...');
+      // Aguardar um pouco para o token ser processado
+      setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            toast({
+              title: "Email confirmado!",
+              description: "Sua conta foi confirmada com sucesso. Redirecionando...",
+            });
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1500);
+          } else {
+            toast({
+              title: "Email confirmado!",
+              description: "Sua conta foi confirmada. Agora você pode fazer login.",
+            });
+            setIsLogin(true);
+            setEmailConfirmationSent(false);
+          }
+        });
+      }, 1000);
+      
+      // Limpar a URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth event:', event, 'Session:', session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Redirecionar para dashboard quando autenticado
-          console.log('User authenticated, redirecting to dashboard');
-          window.location.href = '/dashboard';
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('User signed in successfully');
+          
+          // Verificar se o perfil existe, se não, criar
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('Error checking profile:', profileError);
+            }
+
+            if (!profile) {
+              console.log('Creating user profile...');
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
+                });
+
+              if (insertError) {
+                console.error('Error creating profile:', insertError);
+                toast({
+                  title: "Aviso",
+                  description: "Conta criada, mas houve um problema ao configurar o perfil. Tente novamente.",
+                  variant: "destructive",
+                });
+                return;
+              }
+            }
+
+            toast({
+              title: "Login realizado!",
+              description: "Redirecionando para o dashboard...",
+            });
+            
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          } catch (error) {
+            console.error('Unexpected error handling profile:', error);
+            toast({
+              title: "Login realizado!",
+              description: "Redirecionando para o dashboard...",
+            });
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          }
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
         }
       }
     );
@@ -59,7 +163,7 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,13 +188,7 @@ const Auth = () => {
         } else if (error.message.includes('Email not confirmed')) {
           toast({
             title: "Email não confirmado",
-            description: "Verifique seu email e clique no link de confirmação.",
-            variant: "destructive",
-          });
-        } else if (error.message.includes('Invalid URL') || error.message.includes('redirect')) {
-          toast({
-            title: "Erro de Configuração",
-            description: "Problema de configuração de URL. Entre em contato com o suporte.",
+            description: "Verifique seu email e clique no link de confirmação antes de fazer login.",
             variant: "destructive",
           });
         } else {
@@ -104,10 +202,6 @@ const Auth = () => {
       }
 
       console.log('Login successful');
-      toast({
-        title: "Login realizado!",
-        description: "Redirecionando para o dashboard...",
-      });
       
     } catch (error: any) {
       console.error('Unexpected login error:', error);
@@ -138,13 +232,12 @@ const Auth = () => {
     try {
       console.log('Attempting signup for:', email);
       
-      // Detectar se estamos em produção ou desenvolvimento
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/`;
+      // Usar a URL de produção diretamente
+      const redirectUrl = 'https://wiizeflow.vcom.br/auth';
       
       console.log('Using redirect URL:', redirectUrl);
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -179,17 +272,22 @@ const Auth = () => {
         return;
       }
 
-      console.log('Signup successful');
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar sua conta e fazer login.",
-      });
+      console.log('Signup successful:', data);
       
-      // Limpar formulário e voltar para login
-      setEmail("");
-      setPassword("");
-      setName("");
-      setIsLogin(true);
+      if (data.user && !data.session) {
+        // Usuário criado mas precisa confirmar email
+        setEmailConfirmationSent(true);
+        toast({
+          title: "Cadastro realizado!",
+          description: "Verifique seu email para confirmar sua conta. Após confirmar, você poderá fazer login.",
+        });
+      } else if (data.session) {
+        // Usuário criado e já logado (email confirmation desabilitado)
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Redirecionando para o dashboard...",
+        });
+      }
       
     } catch (error: any) {
       console.error('Unexpected signup error:', error);
@@ -202,6 +300,122 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: "Email necessário",
+        description: "Por favor, insira seu email para reenviar a confirmação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResendingEmail(true);
+
+    try {
+      const redirectUrl = 'https://wiizeflow.vcom.br/auth';
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        console.error('Resend error:', error);
+        toast({
+          title: "Erro ao reenviar",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email reenviado!",
+          description: "Verifique sua caixa de entrada e spam.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Unexpected resend error:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao reenviar o email.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  if (emailConfirmationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6" style={{
+        background: 'linear-gradient(to bottom right, rgb(240, 253, 250), rgb(255, 255, 255), rgb(209, 250, 229))'
+      }}>
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Target className="w-10 h-10" style={{ color: 'rgb(6, 214, 160)' }} />
+              <span className="text-3xl font-bold text-gray-900">WiizeFlow</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Confirme seu email
+            </h1>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-green-600" style={{ color: 'rgb(6, 214, 160)' }}>
+                <Mail className="w-16 h-16 mx-auto mb-4" />
+                Email de confirmação enviado!
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-gray-600">
+                Enviamos um email de confirmação para <strong>{email}</strong>
+              </p>
+              <p className="text-gray-600">
+                Clique no link no email para confirmar sua conta e depois retorne aqui para fazer login.
+              </p>
+              
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleResendConfirmation}
+                  disabled={resendingEmail}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {resendingEmail ? 'Reenviando...' : 'Reenviar email de confirmação'}
+                </Button>
+
+                <Button 
+                  onClick={() => {
+                    setEmailConfirmationSent(false);
+                    setIsLogin(true);
+                    setEmail("");
+                    setPassword("");
+                    setName("");
+                  }}
+                  className="w-full"
+                  style={{ backgroundColor: 'rgb(6, 214, 160)' }}
+                >
+                  Voltar para login
+                </Button>
+              </div>
+
+              <div className="text-center mt-4">
+                <p className="text-sm text-gray-500">
+                  Não recebeu o email? Verifique sua caixa de spam ou use o botão "Reenviar" acima.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6" style={{
@@ -362,6 +576,7 @@ const Auth = () => {
                   setEmail("");
                   setPassword("");
                   setName("");
+                  setEmailConfirmationSent(false);
                 }}
                 className="text-green-600 hover:text-green-700 text-sm font-medium"
                 style={{ color: 'rgb(6, 214, 160)' }}

@@ -195,6 +195,8 @@ const InfiniteCanvasInner = ({
   const handleUpdateNode = useCallback((nodeId: string, updates: Partial<CustomNodeData>) => {
     if (isReadOnly) return;
     
+    console.log('InfiniteCanvas handleUpdateNode called:', { nodeId, updates });
+    
     setNodes((nds) =>
       nds.map((node) =>
         node.id === nodeId
@@ -411,10 +413,16 @@ const InfiniteCanvasInner = ({
     }
   }, [nodes, edges, onSave, isReadOnly]);
 
-  // Memoize nodeTypes with isReadOnly context
+  // Memoize nodeTypes with isReadOnly context and handleUpdateNode
   const nodeTypesWithReadOnly = useMemo(() => ({
-    custom: (props: any) => <CustomNode {...props} isReadOnly={isReadOnly} />
-  }), [isReadOnly]);
+    custom: (props: any) => (
+      <CustomNode 
+        {...props} 
+        isReadOnly={isReadOnly} 
+        onUpdateNode={!isReadOnly ? handleUpdateNode : undefined}
+      />
+    )
+  }), [isReadOnly, handleUpdateNode]);
 
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">

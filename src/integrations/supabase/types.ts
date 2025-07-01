@@ -36,6 +36,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_templates: {
+        Row: {
+          canvas_data: Json | null
+          cover_image_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          preview_url: string | null
+          template_file_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          canvas_data?: Json | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          preview_url?: string | null
+          template_file_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canvas_data?: Json | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          preview_url?: string | null
+          template_file_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string

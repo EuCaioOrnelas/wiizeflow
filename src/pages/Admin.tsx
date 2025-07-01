@@ -25,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { stats, revenueDetails, loading, isAdmin, logout, createUser, refreshStats } = useAdminDashboard();
+  const { stats, revenueDetails, loading, isAdmin, logout, refreshStats } = useAdminDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -100,7 +100,14 @@ const Admin = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <CreateUserDialog onCreateUser={createUser} />
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin/templates')}
+              size="sm"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin/avisos')}

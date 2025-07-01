@@ -11,6 +11,8 @@ import { DeleteFunnelDialog } from "@/components/DeleteFunnelDialog";
 import NotificationBell from "@/components/NotificationBell";
 import { useFreeTrial } from "@/hooks/useFreeTrial";
 import { FreeTrialWarning } from "@/components/FreeTrialWarning";
+import { FunnelCreationDialog } from "@/components/FunnelCreationDialog";
+import { Template } from '@/types/canvas';
 
 interface Funnel {
   id: string;
@@ -37,6 +39,7 @@ const Dashboard = () => {
   const [editingFunnelId, setEditingFunnelId] = useState<string | null>(null);
   const [editingFunnelName, setEditingFunnelName] = useState("");
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [showFunnelCreationDialog, setShowFunnelCreationDialog] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -248,6 +251,18 @@ const Dashboard = () => {
       return;
     }
 
+    // Se for plano gratuito, criar funil em branco diretamente
+    if (profile.plan_type === 'free') {
+      await createBlankFunnel();
+    } else {
+      // Se for plano pago, abrir dialog de seleção
+      setShowFunnelCreationDialog(true);
+    }
+  };
+
+  const createBlankFunnel = async () => {
+    if (!user || !profile) return;
+
     setCreatingFunnel(true);
 
     try {
@@ -282,6 +297,53 @@ const Dashboard = () => {
 
     } catch (error) {
       console.error('Error creating funnel:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao criar funil.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingFunnel(false);
+    }
+  };
+
+  const createFunnelFromTemplate = async (template: Template) => {
+    if (!user || !profile) return;
+
+    setCreatingFunnel(true);
+
+    try {
+      const { data: newFunnel, error } = await supabase
+        .from('funnels')
+        .insert({
+          user_id: user.id,
+          name: `${template.name} - Cópia`,
+          canvas_data: JSON.parse(JSON.stringify({ nodes: template.nodes, edges: template.edges }))
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating funnel from template:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar funil a partir do template.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setFunnels(prev => [newFunnel, ...prev]);
+
+      toast({
+        title: "Sucesso!",
+        description: `Funil criado a partir do template "${template.name}".`,
+      });
+
+      navigate(`/builder/${newFunnel.id}`);
+
+    } catch (error) {
+      console.error('Error creating funnel from template:', error);
       toast({
         title: "Erro",
         description: "Erro inesperado ao criar funil.",
@@ -498,6 +560,10 @@ const Dashboard = () => {
             </div>
             <span className="text-gray-600">Olá, {profile.name || user.email}!</span>
             <NotificationBell />
+            <Button variant="outline" onClick={() => navigate('/templates-prontos')} size="sm">
+              <Target className="w-4 h-4 mr-2" />
+              Templates Prontos
+            </Button>
             <Button variant="outline" onClick={handleAccount} size="sm">
               <User className="w-4 h-4 mr-2" />
               Conta
@@ -790,6 +856,14 @@ const Dashboard = () => {
           </>
         )}
       </main>
+
+      {/* Funnel Creation Dialog */}
+      <FunnelCreationDialog
+        isOpen={showFunnelCreationDialog}
+        onClose={() => setShowFunnelCreationDialog(false)}
+        onCreateBlankFunnel={createBlankFunnel}
+        onCreateFromTemplate={createFunnelFromTemplate}
+      />
 
       {/* Delete Confirmation Dialog */}
       <DeleteFunnelDialog

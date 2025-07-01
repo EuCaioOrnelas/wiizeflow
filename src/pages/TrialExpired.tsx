@@ -81,19 +81,23 @@ const TrialExpired = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Todos os templates</span>
+                  <span className="text-sm sm:text-base text-gray-700">Todos os elementos</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Análises detalhadas</span>
+                  <span className="text-sm sm:text-base text-gray-700">Compartilhamento por Link</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Suporte prioritário</span>
+                  <span className="text-sm sm:text-base text-gray-700">Sistema de Templates</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Compartilhamento avançado</span>
+                  <span className="text-sm sm:text-base text-gray-700">Suporte prioritário via WhatsApp</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
+                  <span className="text-sm sm:text-base text-gray-700">Sistema de Trackeamento (Em breve)</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
@@ -142,23 +146,27 @@ const TrialExpired = () => {
               <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700 font-semibold">Tudo do plano mensal</span>
+                  <span className="text-sm sm:text-base text-gray-700">Funis ilimitados</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Desconto de 30%</span>
+                  <span className="text-sm sm:text-base text-gray-700">Todos os elementos</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Suporte prioritário premium</span>
+                  <span className="text-sm sm:text-base text-gray-700">Compartilhamento por Link</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Recursos futuros inclusos</span>
+                  <span className="text-sm sm:text-base text-gray-700">Sistema de Templates</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
-                  <span className="text-sm sm:text-base text-gray-700">Economia de R$ 167/ano</span>
+                  <span className="text-sm sm:text-base text-gray-700">Suporte prioritário via WhatsApp</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
+                  <span className="text-sm sm:text-base text-gray-700">Sistema de Trackeamento (Em breve)</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
@@ -167,6 +175,10 @@ const TrialExpired = () => {
                 <div className="flex items-center space-x-2">
                   <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
                   <span className="text-sm sm:text-base text-gray-700">Dashboard com Métricas Reais</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Check className="w-4 sm:w-5 h-4 sm:h-5 text-green-600 flex-shrink-0" style={{ color: 'rgb(6, 214, 160)' }} />
+                  <span className="text-sm sm:text-base text-gray-700">30% de desconto no valor</span>
                 </div>
               </div>
               

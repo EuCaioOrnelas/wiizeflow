@@ -2,9 +2,6 @@ import { memo, useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
@@ -45,10 +42,7 @@ interface CustomNodeComponentProps extends NodeProps {
 }
 
 export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly = false }: CustomNodeComponentProps) => {
-  const [showCustomizer, setShowCustomizer] = useState(false);
   const [showContentPopup, setShowContentPopup] = useState(false);
-  const [tempName, setTempName] = useState(data.label);
-  const customizerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
   const getNodeIcon = (type: string) => {
@@ -177,21 +171,10 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
     }
   };
 
-  const handleNameSave = (e?: React.FormEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    // Só salva se o nome realmente mudou e não está vazio
-    if (onUpdateNode && tempName.trim() && tempName.trim() !== data.label) {
-      onUpdateNode(id, { label: tempName.trim() });
-    }
-  };
-
   const handleOpenEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    
     // Trigger double click event to open content editor
     const event = new MouseEvent('dblclick', {
       view: window,
@@ -201,13 +184,18 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
     e.currentTarget.parentElement?.dispatchEvent(event);
   };
 
+  // Novo handler para abrir o editor lateral ao clicar na engrenagem
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    // Prevenir que o evento bubble para o container pai
-    e.nativeEvent.stopImmediatePropagation();
-    setTempName(data.label);
-    setShowCustomizer(true);
+    
+    // Trigger node click to select it and open sidebar editor
+    const event = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+    });
+    e.currentTarget.parentElement?.dispatchEvent(event);
   };
 
   const handleNodeClick = (e: React.MouseEvent) => {
@@ -221,49 +209,6 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
       e.stopPropagation();
       setShowContentPopup(true);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    setTempName(e.target.value);
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleNameSave();
-      setShowCustomizer(false);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setTempName(data.label);
-      setShowCustomizer(false);
-    }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleNameSave(e);
-    setShowCustomizer(false);
-  };
-
-  const handlePopoverContentClick = (e: React.MouseEvent) => {
-    // Previne que cliques dentro do popover fechem o popover
-    e.stopPropagation();
-  };
-
-  const handleCancelEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTempName(data.label);
-    setShowCustomizer(false);
-  };
-
-  const handlePopoverOpenChange = (open: boolean) => {
-    if (open) {
-      setTempName(data.label);
-    }
-    setShowCustomizer(open);
   };
 
   const hasRealContent = data.content && (
@@ -378,79 +323,15 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
                 <Edit3 className="w-2.5 h-2.5 md:w-3 md:h-3" />
               </Button>
               
-              {/* Configurações */}
-              <Popover 
-                open={showCustomizer} 
-                onOpenChange={handlePopoverOpenChange}
-                modal={true}
+              {/* Botão de configurações - agora abre o editor lateral */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
+                onClick={handleSettingsClick}
               >
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-gray-200 opacity-70 hover:opacity-100"
-                    onClick={handleSettingsClick}
-                  >
-                    <Settings className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-72 md:w-80 p-3 md:p-4 bg-white border shadow-lg z-50" 
-                  side="top" 
-                  align="end"
-                  ref={customizerRef}
-                  onClick={handlePopoverContentClick}
-                  onOpenAutoFocus={(e) => {
-                    // Impedir que o foco automático cause problemas
-                    e.preventDefault();
-                  }}
-                  onInteractOutside={(e) => {
-                    // Prevenir fechamento quando clicar fora
-                    e.preventDefault();
-                  }}
-                  onEscapeKeyDown={(e) => {
-                    // Permitir fechar com ESC apenas
-                    setTempName(data.label);
-                    setShowCustomizer(false);
-                  }}
-                >
-                  <form onSubmit={handleFormSubmit} className="space-y-3 md:space-y-4">
-                    {/* Campo para editar o nome */}
-                    <div>
-                      <Label htmlFor="element-name" className="text-xs md:text-sm font-medium">Nome do Elemento</Label>
-                      <div className="flex space-x-2 mt-1">
-                        <Input
-                          id="element-name"
-                          value={tempName}
-                          onChange={handleInputChange}
-                          onKeyDown={handleInputKeyDown}
-                          className="flex-1 text-xs md:text-sm"
-                          placeholder="Nome do elemento"
-                          onClick={(e) => e.stopPropagation()}
-                          autoFocus
-                        />
-                        <Button 
-                          type="submit" 
-                          size="sm" 
-                          className="text-xs"
-                          disabled={!tempName.trim() || tempName.trim() === data.label}
-                        >
-                          Salvar
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs"
-                          onClick={handleCancelEdit}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  </form>
-                </PopoverContent>
-              </Popover>
+                <Settings className="w-2.5 h-2.5 md:w-3 md:h-3" />
+              </Button>
             </div>
           )}
         </div>

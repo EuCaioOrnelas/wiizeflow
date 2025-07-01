@@ -32,17 +32,24 @@ const SharedFunnel = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    console.log('SharedFunnel mounted with shareToken:', shareToken);
     loadSharedFunnel();
     checkCurrentUser();
   }, [shareToken]);
 
   const checkCurrentUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    setCurrentUser(session?.user || null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUser(session?.user || null);
+      console.log('Current user session:', session?.user?.email || 'Not logged in');
+    } catch (error) {
+      console.error('Error checking current user:', error);
+    }
   };
 
   const loadSharedFunnel = async () => {
     if (!shareToken) {
+      console.error('No share token provided');
       toast({
         title: "Erro",
         description: "Token de compartilhamento inválido.",
@@ -129,7 +136,7 @@ const SharedFunnel = () => {
         name: funnel.name,
         canvas_data: canvasData,
         owner_name: ownerName,
-        allow_download: shareData.allow_download // Usar o valor real do banco de dados
+        allow_download: shareData.allow_download
       });
 
     } catch (error) {
@@ -226,6 +233,7 @@ const SharedFunnel = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Carregando funil...
           </h2>
@@ -257,7 +265,7 @@ const SharedFunnel = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
-      {/* Header simples sem subnavbar */}
+      {/* Header simples */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-3 md:py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
@@ -295,7 +303,7 @@ const SharedFunnel = () => {
         </div>
       </div>
 
-      {/* Canvas em modo somente leitura - sem header e sidebars */}
+      {/* Canvas em modo somente leitura */}
       <div className="flex-1 overflow-hidden">
         <InfiniteCanvas
           funnelId={funnelData.id}

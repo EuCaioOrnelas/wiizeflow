@@ -9,6 +9,8 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useNavigate } from "react-router-dom";
 import { DeleteFunnelDialog } from "@/components/DeleteFunnelDialog";
 import NotificationBell from "@/components/NotificationBell";
+import { useFreeTrial } from "@/hooks/useFreeTrial";
+import { FreeTrialWarning } from "@/components/FreeTrialWarning";
 
 interface Funnel {
   id: string;
@@ -27,6 +29,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [displayLimit, setDisplayLimit] = useState(6);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [creatingFunnel, setCreatingFunnel] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
@@ -37,34 +40,92 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Hook para gerenciar teste gratuito - só carrega depois que o perfil estiver pronto
+  const trialStatus = useFreeTrial(user, profile);
+
   useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing dashboard auth...');
+        
+        // Verificar sessão existente primeiro
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          navigate('/auth');
+          return;
+        }
+
+        if (!currentSession?.user) {
+          console.log('No active session, redirecting to auth');
+          navigate('/auth');
+          return;
+        }
+
+        console.log('Session found for user:', currentSession.user.email);
+        setSession(currentSession);
+        setUser(currentSession.user);
+        
+        // Carregar dados do usuário
+        await loadUserData(currentSession.user.id);
+        
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        navigate('/auth');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, session) => {
+        console.log('Dashboard auth event:', event, session?.user?.email);
         
         if (!session?.user) {
+          console.log('No session in auth change, redirecting to auth');
           navigate('/auth');
-        } else {
-          loadUserData(session.user.id);
+          return;
+        }
+        
+        setSession(session);
+        setUser(session.user);
+        
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in, loading data...');
+          await loadUserData(session.user.id);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (!session?.user) {
-        navigate('/auth');
-      } else {
-        loadUserData(session.user.id);
-      }
-      setLoading(false);
-    });
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Verificar se o teste gratuito expirou e redirecionar - só depois que tudo estiver carregado
+  useEffect(() => {
+    console.log('🔍 Dashboard trial check:', {
+      loading,
+      profileLoading,
+      profile: !!profile,
+      trialLoading: trialStatus.loading,
+      isExpired: trialStatus.isExpired,
+      planType: profile?.plan_type,
+      shouldRedirect: trialStatus.isExpired && profile?.plan_type === 'free'
+    });
+
+    if (loading || profileLoading || !profile || trialStatus.loading) {
+      console.log('⏳ Waiting for data to load...');
+      return;
+    }
+    
+    if (trialStatus.isExpired && profile?.plan_type === 'free') {
+      console.log('🚫 Free trial expired, redirecting to trial-expired page');
+      navigate('/trial-expired');
+    }
+  }, [trialStatus.isExpired, trialStatus.loading, profile, loading, profileLoading, navigate]);
 
   // Filtrar funis baseado no termo de busca
   useEffect(() => {
@@ -81,11 +142,15 @@ const Dashboard = () => {
 
   const loadUserData = async (userId: string) => {
     try {
+      console.log('Loading user data for:', userId);
+      setProfileLoading(true);
+      
+      // Usar maybeSingle() em vez de single() para evitar erro quando não encontra perfil
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error loading profile:', profileError);
@@ -97,7 +162,40 @@ const Dashboard = () => {
         return;
       }
 
-      setProfile(profileData);
+      if (!profileData) {
+        console.log('No profile found, attempting to create one...');
+        // Se não encontrou perfil, tentar criar um
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            name: 'Usuário',
+            email: user?.email || '',
+            plan_type: 'free',
+            funnel_count: 0,
+            free_trial_started_at: new Date().toISOString(),
+            free_trial_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            subscription_status: 'active'
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          toast({
+            title: "Erro",
+            description: "Erro ao criar perfil do usuário. Tente fazer logout e login novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('Profile created:', newProfile);
+        setProfile(newProfile);
+      } else {
+        console.log('Profile loaded:', profileData);
+        setProfile(profileData);
+      }
 
       const { data: funnelsData, error: funnelsError } = await supabase
         .from('funnels')
@@ -115,6 +213,7 @@ const Dashboard = () => {
         return;
       }
 
+      console.log('Funnels loaded:', funnelsData?.length);
       setFunnels(funnelsData || []);
 
     } catch (error) {
@@ -124,6 +223,8 @@ const Dashboard = () => {
         description: "Erro ao carregar dados do usuário.",
         variant: "destructive",
       });
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -363,7 +464,7 @@ const Dashboard = () => {
   const displayedFunnels = filteredFunnels.slice(0, displayLimit);
   const hasMoreFunnels = filteredFunnels.length > displayLimit;
 
-  if (loading) {
+  if (loading || profileLoading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <Target className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
@@ -373,7 +474,12 @@ const Dashboard = () => {
   }
 
   if (!user || !profile) {
-    return <div>Carregando...</div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <Target className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
+        <p className="text-gray-600">Carregando perfil...</p>
+      </div>
+    </div>;
   }
 
   return (
@@ -406,6 +512,14 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Free Trial Warning - só aparece para usuários do plano gratuito e quando os dados estão carregados */}
+        {profile?.plan_type === 'free' && !trialStatus.loading && !trialStatus.isExpired && (
+          <FreeTrialWarning 
+            daysRemaining={trialStatus.daysRemaining}
+            expiresAt={trialStatus.expiresAt}
+          />
+        )}
+
         {/* Usage Stats - 3 cards layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>

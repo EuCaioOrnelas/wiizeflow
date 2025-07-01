@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Node } from '@xyflow/react';
 import { CustomNodeData, NodeContent } from '@/types/canvas';
@@ -13,6 +12,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
   const [state, setState] = useState<ContentEditorState>({
     title: '',
     description: '',
+    metrics: '',
     contentItems: [],
   });
 
@@ -22,6 +22,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
       setState({
         title: content.title || '',
         description: content.description || '',
+        metrics: content.metrics || '',
         contentItems: content.items || [],
       });
     }
@@ -33,6 +34,10 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
 
   const setDescription = useCallback((description: string) => {
     setState(prev => ({ ...prev, description }));
+  }, []);
+
+  const setMetrics = useCallback((metrics: string) => {
+    setState(prev => ({ ...prev, metrics }));
   }, []);
 
   const addContentItem = useCallback((type: ContentItem['type']) => {
@@ -129,6 +134,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
     const content: NodeContent = {
       title: state.title,
       description: state.description,
+      metrics: state.metrics,
       items: state.contentItems,
     };
     
@@ -139,6 +145,7 @@ export const useContentEditor = ({ node, onSave }: UseContentEditorProps) => {
     ...state,
     setTitle,
     setDescription,
+    setMetrics,
     addContentItem,
     updateContentItem,
     removeContentItem,

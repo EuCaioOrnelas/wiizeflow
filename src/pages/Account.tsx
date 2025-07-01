@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import Footer from "@/components/Footer";
+import { useNavigate } from "react-router-dom";
 
 const Account = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -24,6 +25,7 @@ const Account = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Configurar listener de mudanças de autenticação
@@ -282,8 +284,8 @@ const Account = () => {
         type: 'premium',
         title: 'Suporte Premium',
         description: 'WhatsApp e Email',
-        contact: '+55 (11) 99999-9999',
-        email: 'support@wiizeflow.com.br',
+        contact: '+55 (44) 99148-7211',
+        email: 'wiizeflow@gmail.com',
         icon: MessageCircle
       };
     } else {
@@ -292,7 +294,7 @@ const Account = () => {
         title: 'Suporte Gratuito',
         description: 'Email apenas',
         contact: null,
-        email: 'support@wiizeflow.com.br',
+        email: 'wiizeflow@gmail.com',
         icon: Mail
       };
     }
@@ -319,17 +321,15 @@ const Account = () => {
       <header className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img 
-              src="/lovable-uploads/7f16165c-d306-4571-8b04-5c0136a778b4.png" 
-              alt="WiizeFlow Logo" 
-              className="w-8 h-8"
-            />
-            <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
+            <div className="flex items-center space-x-2">
+              <Target className="w-8 h-8 text-[rgb(6,214,160)]" />
+              <span className="text-2xl font-bold text-gray-900">WiizeFlow</span>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="outline" onClick={() => window.location.href = '/dashboard'}>
-              Painel
+            <Button variant="outline" onClick={() => navigate('/dashboard')}>
+              Dashboard
             </Button>
             <Button variant="outline" onClick={handleLogout} size="sm">
               <LogOut className="w-4 h-4 mr-2" />
@@ -487,7 +487,7 @@ const Account = () => {
                         variant="outline" 
                         size="sm"
                         className="w-full"
-                        onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, preciso de suporte técnico.`, '_blank')}
+                        onClick={() => window.open(`https://wa.me/5544991487211?text=Olá, preciso de suporte técnico.`, '_blank')}
                       >
                         {supportInfo.contact}
                       </Button>

@@ -182,10 +182,11 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
       e.preventDefault();
       e.stopPropagation();
     }
+    
+    // Só salva se o nome realmente mudou e não está vazio
     if (onUpdateNode && tempName.trim() && tempName.trim() !== data.label) {
       onUpdateNode(id, { label: tempName.trim() });
     }
-    setShowCustomizer(false);
   };
 
   const handleOpenEditor = (e: React.MouseEvent) => {
@@ -203,11 +204,19 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    // Prevenir que o evento bubble para o container pai
+    e.nativeEvent.stopImmediatePropagation();
     setTempName(data.label);
-    setShowCustomizer(!showCustomizer);
+    setShowCustomizer(true);
   };
 
   const handleNodeClick = (e: React.MouseEvent) => {
+    // Verificar se o clique foi em um botão de ação
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // No modo read-only, abrir popup se tiver conteúdo
     if (isReadOnly && hasRealContent) {
       e.stopPropagation();
       setShowContentPopup(true);
@@ -224,6 +233,7 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
     if (e.key === 'Enter') {
       e.preventDefault();
       handleNameSave();
+      setShowCustomizer(false);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setTempName(data.label);
@@ -235,9 +245,27 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
     e.preventDefault();
     e.stopPropagation();
     handleNameSave(e);
+    setShowCustomizer(false);
   };
 
-  // Verificar se há conteúdo real usando a estrutura correta do NodeContent
+  const handlePopoverContentClick = (e: React.MouseEvent) => {
+    // Previne que cliques dentro do popover fechem o popover
+    e.stopPropagation();
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTempName(data.label);
+    setShowCustomizer(false);
+  };
+
+  const handlePopoverOpenChange = (open: boolean) => {
+    if (open) {
+      setTempName(data.label);
+    }
+    setShowCustomizer(open);
+  };
+
   const hasRealContent = data.content && (
     (data.content.title && data.content.title.trim() !== '') ||
     (data.content.description && data.content.description.trim() !== '') ||
@@ -351,12 +379,11 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
               </Button>
               
               {/* Configurações */}
-              <Popover open={showCustomizer} onOpenChange={(open) => {
-                if (!open) {
-                  setTempName(data.label);
-                }
-                setShowCustomizer(open);
-              }}>
+              <Popover 
+                open={showCustomizer} 
+                onOpenChange={handlePopoverOpenChange}
+                modal={true}
+              >
                 <PopoverTrigger asChild>
                   <Button 
                     variant="ghost" 
@@ -368,10 +395,24 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent 
-                  className="w-72 md:w-80 p-3 md:p-4" 
+                  className="w-72 md:w-80 p-3 md:p-4 bg-white border shadow-lg z-50" 
                   side="top" 
                   align="end"
                   ref={customizerRef}
+                  onClick={handlePopoverContentClick}
+                  onOpenAutoFocus={(e) => {
+                    // Impedir que o foco automático cause problemas
+                    e.preventDefault();
+                  }}
+                  onInteractOutside={(e) => {
+                    // Prevenir fechamento quando clicar fora
+                    e.preventDefault();
+                  }}
+                  onEscapeKeyDown={(e) => {
+                    // Permitir fechar com ESC apenas
+                    setTempName(data.label);
+                    setShowCustomizer(false);
+                  }}
                 >
                   <form onSubmit={handleFormSubmit} className="space-y-3 md:space-y-4">
                     {/* Campo para editar o nome */}
@@ -385,9 +426,25 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
                           onKeyDown={handleInputKeyDown}
                           className="flex-1 text-xs md:text-sm"
                           placeholder="Nome do elemento"
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
                         />
-                        <Button type="submit" size="sm" className="text-xs">
+                        <Button 
+                          type="submit" 
+                          size="sm" 
+                          className="text-xs"
+                          disabled={!tempName.trim() || tempName.trim() === data.label}
+                        >
                           Salvar
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancelar
                         </Button>
                       </div>
                     </div>
@@ -433,6 +490,9 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
           <div className="text-xs bg-gray-100 rounded p-1 mt-2">
             {data.content && data.content.title && (
               <div className="font-medium truncate text-xs">{data.content.title}</div>
+            )}
+            {isReadOnly && (
+              <div className="text-xs text-gray-500 mt-1">Clique para ver mais detalhes</div>
             )}
           </div>
         )}

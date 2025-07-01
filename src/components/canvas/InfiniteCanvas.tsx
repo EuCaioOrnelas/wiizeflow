@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -14,8 +14,6 @@ import {
   Panel,
   useReactFlow,
   ReactFlowProvider,
-  getNodesBounds,
-  getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useToast } from '@/hooks/use-toast';
@@ -28,9 +26,7 @@ import TemplateManager from './TemplateManager';
 import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { useCanvasHotkeys } from '@/hooks/useCanvasHotkeys';
 import { useCanvasOperations } from '@/hooks/useCanvasOperations';
-import { CustomNodeData, InfiniteCanvasProps, Template } from '@/types/canvas';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { CustomNodeData, InfiniteCanvasProps } from '@/types/canvas';
 import { EdgeTypeSelector } from './EdgeTypeSelector';
 import { EdgeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
@@ -47,23 +43,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FunnelDashboard } from './FunnelDashboard';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 
+// Move nodeTypes outside component to prevent recreation
 const nodeTypes = {
-  custom: (props: any) => (
-    <CustomNode 
-      {...props} 
-      onUpdateNode={(nodeId: string, updates: Partial<CustomNodeData>) => {
-        if (props.onUpdateNode) {
-          props.onUpdateNode(nodeId, updates);
-        }
-      }} 
-    />
-  ),
+  custom: CustomNode,
 };
 
 interface ExtendedInfiniteCanvasProps extends InfiniteCanvasProps {
   initialCanvasData?: { nodes: Node<CustomNodeData>[]; edges: Edge[] };
   onSave?: (canvasData: { nodes: Node<CustomNodeData>[]; edges: Edge[] }) => void;
+  onOpenDashboard?: () => void;
   isReadOnly?: boolean;
 }
 
@@ -73,6 +65,7 @@ const InfiniteCanvasInner = ({
   onFunnelNameChange, 
   initialCanvasData,
   onSave,
+  onOpenDashboard,
   isReadOnly = false
 }: ExtendedInfiniteCanvasProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CustomNodeData>>(
@@ -89,12 +82,58 @@ const InfiniteCanvasInner = ({
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [lastSaved, setLastSaved] = useState<string>('');
   const [userPlan, setUserPlan] = useState<string>('free');
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState<string>('');
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { screenToFlowPosition, getViewport } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
+
+  // Check for unsaved changes
+  useEffect(() => {
+    const currentState = JSON.stringify({ nodes, edges });
+    if (lastSavedState && currentState !== lastSavedState) {
+      setHasUnsavedChanges(true);
+    } else if (lastSavedState && currentState === lastSavedState) {
+      setHasUnsavedChanges(false);
+    }
+  }, [nodes, edges, lastSavedState]);
+
+  // Initialize last saved state when initial data loads
+  useEffect(() => {
+    if (initialCanvasData && !lastSavedState) {
+      setLastSavedState(JSON.stringify(initialCanvasData));
+    }
+  }, [initialCanvasData, lastSavedState]);
+
+  // Unsaved changes hook
+  const {
+    showSaveDialog,
+    navigateWithGuard,
+    handleSaveAndNavigate,
+    handleDiscardAndNavigate,
+    handleCancelNavigation,
+  } = useUnsavedChanges({
+    hasUnsavedChanges,
+    onSave: async () => {
+      if (onSave) {
+        await onSave({ nodes, edges });
+        const newState = JSON.stringify({ nodes, edges });
+        setLastSavedState(newState);
+        setHasUnsavedChanges(false);
+      }
+    },
+  });
+
+  // Update nodes when initialCanvasData changes
+  useEffect(() => {
+    if (initialCanvasData) {
+      setNodes(initialCanvasData.nodes || []);
+      setEdges(initialCanvasData.edges || []);
+    }
+  }, [initialCanvasData, setNodes, setEdges]);
 
   // Load user plan
   useEffect(() => {
@@ -152,22 +191,6 @@ const InfiniteCanvasInner = ({
     saveToHistory
   });
 
-  // Auto-save functionality (apenas no modo de edição)
-  useEffect(() => {
-    if (isReadOnly) return;
-    
-    const autoSave = () => {
-      const currentData = JSON.stringify({ nodes, edges });
-      if (currentData !== lastSaved && onSave) {
-        onSave({ nodes, edges });
-        setLastSaved(currentData);
-      }
-    };
-
-    const timeoutId = setTimeout(autoSave, 2000);
-    return () => clearTimeout(timeoutId);
-  }, [nodes, edges, lastSaved, onSave, isReadOnly]);
-
   // Handle node updates (apenas no modo de edição)
   const handleUpdateNode = useCallback((nodeId: string, updates: Partial<CustomNodeData>) => {
     if (isReadOnly) return;
@@ -182,14 +205,18 @@ const InfiniteCanvasInner = ({
     saveToHistory();
   }, [setNodes, saveToHistory, isReadOnly]);
 
-  // Modificar os nodeTypes para incluir a função de atualização
-  const customNodeTypes = {
-    custom: (props: any) => (
-      <CustomNode {...props} onUpdateNode={isReadOnly ? undefined : handleUpdateNode} isReadOnly={isReadOnly} />
-    ),
-  };
+  const updateNodeData = useCallback((nodeId: string, updates: Partial<CustomNodeData>) => {
+    if (isReadOnly) return;
+    
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...updates } }
+          : node
+      )
+    );
+  }, [setNodes, isReadOnly]);
 
-  // Função para aplicar tipo de linha a todas as edges existentes
   const applyEdgeTypeToAll = useCallback(() => {
     if (isReadOnly) return;
     
@@ -208,9 +235,7 @@ const InfiniteCanvasInner = ({
     });
   }, [currentEdgeType, setEdges, saveToHistory, toast, isReadOnly]);
 
-  // Template operations
   const handleLoadTemplate = useCallback((nodes: Node<CustomNodeData>[], edges: Edge[]) => {
-    // Generate new IDs for nodes and edges to avoid conflicts
     const idMap = new Map();
     
     const newNodes = nodes.map(node => {
@@ -244,7 +269,6 @@ const InfiniteCanvasInner = ({
     return { nodes, edges };
   }, [nodes, edges]);
 
-  // Undo/Redo handlers (apenas no modo de edição)
   const handleUndo = useCallback(() => {
     if (isReadOnly) return;
     
@@ -267,7 +291,6 @@ const InfiniteCanvasInner = ({
     }
   }, [redo, setNodes, setEdges, setHistoryIndex, isReadOnly]);
 
-  // Hotkeys (apenas no modo de edição)
   useCanvasHotkeys({
     onUndo: isReadOnly ? () => {} : handleUndo,
     onRedo: isReadOnly ? () => {} : handleRedo,
@@ -277,11 +300,13 @@ const InfiniteCanvasInner = ({
     onSave: isReadOnly ? () => {} : () => {
       if (onSave) {
         onSave({ nodes, edges });
+        const newState = JSON.stringify({ nodes, edges });
+        setLastSavedState(newState);
+        setHasUnsavedChanges(false);
       }
     }
   });
 
-  // Drag and Drop handlers (apenas no modo de edição)
   const onDragOver = useCallback((event: React.DragEvent) => {
     if (isReadOnly) return;
     
@@ -324,7 +349,6 @@ const InfiniteCanvasInner = ({
     [setEdges, saveToHistory, currentEdgeType, isReadOnly]
   );
 
-  // Função para deletar edge ao clicar com confirmação (apenas no modo de edição)
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     if (isReadOnly) return;
     
@@ -374,208 +398,41 @@ const InfiniteCanvasInner = ({
     });
   }, [isReadOnly]);
 
-  const saveFunnel = useCallback(() => {
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  const saveFunnel = useCallback(async () => {
     if (onSave && !isReadOnly) {
-      onSave({ nodes, edges });
+      await onSave({ nodes, edges });
+      const newState = JSON.stringify({ nodes, edges });
+      setLastSavedState(newState);
+      setHasUnsavedChanges(false);
     }
   }, [nodes, edges, onSave, isReadOnly]);
 
-  // Função melhorada para exportar como imagem
-  const exportAsImage = useCallback(async () => {
-    if (reactFlowWrapper.current) {
-      try {
-        // Aguardar um momento para garantir que tudo esteja renderizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Forçar re-renderização dos SVGs
-        const svgElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edges svg');
-        svgElements.forEach((svg: any) => {
-          svg.style.position = 'absolute';
-          svg.style.zIndex = '1';
-          svg.style.pointerEvents = 'none';
-        });
-
-        const pathElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edge path');
-        pathElements.forEach((path: any) => {
-          path.style.stroke = '#10b981';
-          path.style.strokeWidth = '2';
-          path.style.fill = 'none';
-        });
-
-        // Aguardar mais um momento após aplicar os estilos
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(reactFlowWrapper.current, {
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          scale: 2,
-          logging: false,
-          width: reactFlowWrapper.current.scrollWidth,
-          height: reactFlowWrapper.current.scrollHeight,
-          ignoreElements: (element) => {
-            return element.classList.contains('react-flow__minimap') ||
-                   element.classList.contains('react-flow__controls') ||
-                   element.classList.contains('react-flow__panel');
-          },
-          onclone: (clonedDoc, element) => {
-            // Garantir que todos os SVGs estejam visíveis no clone
-            const clonedSvgs = clonedDoc.querySelectorAll('.react-flow__edges svg');
-            clonedSvgs.forEach((svg: any) => {
-              svg.style.position = 'absolute';
-              svg.style.zIndex = '10';
-              svg.style.display = 'block';
-              svg.style.visibility = 'visible';
-              svg.style.opacity = '1';
-            });
-            
-            const clonedPaths = clonedDoc.querySelectorAll('.react-flow__edge path');
-            clonedPaths.forEach((path: any) => {
-              path.style.stroke = '#10b981';
-              path.style.strokeWidth = '2';
-              path.style.fill = 'none';
-              path.style.display = 'block';
-              path.style.visibility = 'visible';
-              path.style.opacity = '1';
-            });
-
-            // Garantir que o container das edges esteja visível
-            const edgesContainer = clonedDoc.querySelector('.react-flow__edges');
-            if (edgesContainer) {
-              (edgesContainer as any).style.position = 'absolute';
-              (edgesContainer as any).style.zIndex = '10';
-              (edgesContainer as any).style.display = 'block';
-              (edgesContainer as any).style.visibility = 'visible';
-              (edgesContainer as any).style.opacity = '1';
-            }
-          }
-        });
-
-        const link = document.createElement('a');
-        link.download = `${funnelName}-funnel.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-
-        toast({
-          title: "Imagem exportada!",
-          description: "O funil foi exportado como PNG com sucesso.",
-        });
-      } catch (error) {
-        console.error('Erro ao exportar imagem:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao exportar imagem.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [funnelName, toast]);
-
-  // Função melhorada para exportar como PDF
-  const exportAsPDF = useCallback(async () => {
-    if (reactFlowWrapper.current) {
-      try {
-        // Aguardar um momento para garantir que tudo esteja renderizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Forçar re-renderização dos SVGs
-        const svgElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edges svg');
-        svgElements.forEach((svg: any) => {
-          svg.style.position = 'absolute';
-          svg.style.zIndex = '1';
-          svg.style.pointerEvents = 'none';
-        });
-
-        const pathElements = reactFlowWrapper.current.querySelectorAll('.react-flow__edge path');
-        pathElements.forEach((path: any) => {
-          path.style.stroke = '#10b981';
-          path.style.strokeWidth = '2';
-          path.style.fill = 'none';
-        });
-
-        // Aguardar mais um momento após aplicar os estilos
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(reactFlowWrapper.current, {
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          scale: 2,
-          logging: false,
-          width: reactFlowWrapper.current.scrollWidth,
-          height: reactFlowWrapper.current.scrollHeight,
-          ignoreElements: (element) => {
-            return element.classList.contains('react-flow__minimap') ||
-                   element.classList.contains('react-flow__controls') ||
-                   element.classList.contains('react-flow__panel');
-          },
-          onclone: (clonedDoc, element) => {
-            // Garantir que todos os SVGs estejam visíveis no clone
-            const clonedSvgs = clonedDoc.querySelectorAll('.react-flow__edges svg');
-            clonedSvgs.forEach((svg: any) => {
-              svg.style.position = 'absolute';
-              svg.style.zIndex = '10';
-              svg.style.display = 'block';
-              svg.style.visibility = 'visible';
-              svg.style.opacity = '1';
-            });
-            
-            const clonedPaths = clonedDoc.querySelectorAll('.react-flow__edge path');
-            clonedPaths.forEach((path: any) => {
-              path.style.stroke = '#10b981';
-              path.style.strokeWidth = '2';
-              path.style.fill = 'none';
-              path.style.display = 'block';
-              path.style.visibility = 'visible';
-              path.style.opacity = '1';
-            });
-
-            // Garantir que o container das edges esteja visível
-            const edgesContainer = clonedDoc.querySelector('.react-flow__edges');
-            if (edgesContainer) {
-              (edgesContainer as any).style.position = 'absolute';
-              (edgesContainer as any).style.zIndex = '10';
-              (edgesContainer as any).style.display = 'block';
-              (edgesContainer as any).style.visibility = 'visible';
-              (edgesContainer as any).style.opacity = '1';
-            }
-          }
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-          unit: 'px',
-          format: [canvas.width, canvas.height]
-        });
-
-        const imgWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = pdf.internal.pageSize.getHeight();
-
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`${funnelName}-funnel.pdf`);
-
-        toast({
-          title: "PDF exportado!",
-          description: "O funil foi exportado como PDF com sucesso.",
-        });
-      } catch (error) {
-        console.error('Erro ao exportar PDF:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao exportar PDF.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [funnelName, toast]);
+  // Memoize nodeTypes with isReadOnly context
+  const nodeTypesWithReadOnly = useMemo(() => ({
+    custom: (props: any) => <CustomNode {...props} isReadOnly={isReadOnly} />
+  }), [isReadOnly]);
 
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">
-      {!isMinimized && !isReadOnly && <CanvasSidebar onAddNode={addNode} />}
+      {/* Sidebar sempre visível quando não minimizado e não está em modo read-only */}
+      {!isMinimized && !isReadOnly && (
+        <CanvasSidebar 
+          showSidebar={true}
+          selectedNodeId={selectedNode?.id || null}
+          nodes={nodes}
+          updateNodeData={updateNodeData}
+          onClose={() => setSelectedNode(null)}
+          onAddNode={addNode}
+        />
+      )}
       
       <div className="flex-1 flex flex-col">
-        {!isMinimized && (
+        {/* Remover o header completamente no modo read-only */}
+        {!isMinimized && !isReadOnly && (
           <CanvasHeader
             funnelName={funnelName}
             onFunnelNameChange={onFunnelNameChange}
@@ -583,16 +440,18 @@ const InfiniteCanvasInner = ({
             onRedo={handleRedo}
             canUndo={canUndo}
             canRedo={canRedo}
-            onExportAsImage={() => {}} // TODO: implement export functions
-            onExportAsPDF={() => {}} // TODO: implement export functions
+            onExportAsImage={() => {}}
+            onExportAsPDF={() => {}}
             onSave={saveFunnel}
             onOpenTemplateManager={!isReadOnly ? () => setIsTemplateManagerOpen(true) : undefined}
             onShareFunnel={!isReadOnly ? () => setIsShareDialogOpen(true) : undefined}
+            onOpenDashboard={onOpenDashboard}
             isReadOnly={isReadOnly}
+            hasUnsavedChanges={hasUnsavedChanges}
+            navigateWithGuard={navigateWithGuard}
           />
         )}
 
-        {/* Canvas */}
         <div className="flex-1" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
@@ -604,10 +463,11 @@ const InfiniteCanvasInner = ({
             onNodeDoubleClick={onNodeDoubleClick}
             onNodeContextMenu={isReadOnly ? undefined : onNodeContextMenu}
             onPaneContextMenu={isReadOnly ? undefined : onPaneContextMenu}
+            onPaneClick={onPaneClick}
             onEdgeClick={isReadOnly ? undefined : onEdgeClick}
             onDragOver={isReadOnly ? undefined : onDragOver}
             onDrop={isReadOnly ? undefined : onDrop}
-            nodeTypes={customNodeTypes}
+            nodeTypes={nodeTypesWithReadOnly}
             fitView
             snapToGrid={!isReadOnly}
             snapGrid={[20, 20]}
@@ -632,11 +492,13 @@ const InfiniteCanvasInner = ({
               color="#e5e7eb"
             />
             
+            {/* Simplificar o panel para modo read-only */}
             <Panel position="top-center">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 flex items-center space-x-4">
                 <span className="text-sm text-gray-600 dark:text-gray-300">
                   {nodes.length} nós • {edges.length} conexões
                   {isReadOnly && <span className="ml-2 text-blue-600">• Modo Visualização</span>}
+                  {hasUnsavedChanges && !isReadOnly && <span className="ml-2 text-orange-600">• Alterações não salvas</span>}
                 </span>
                 {!isMinimized && !isReadOnly && (
                   <EdgeTypeSelector 
@@ -648,7 +510,6 @@ const InfiniteCanvasInner = ({
               </div>
             </Panel>
 
-            {/* Minimize/Maximize Button (apenas no modo de edição) */}
             {!isReadOnly && (
               <Panel position="top-right">
                 <Button
@@ -691,8 +552,17 @@ const InfiniteCanvasInner = ({
           onClose={() => setIsEditorOpen(false)}
           onSave={isReadOnly ? undefined : (content, elementName) => updateNodeContent(selectedNode.id, content, elementName)}
           isReadOnly={isReadOnly}
+          funnelId={funnelId}
         />
       )}
+
+      {/* Dashboard */}
+      <FunnelDashboard
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        funnelId={funnelId}
+        funnelName={funnelName}
+      />
 
       {/* Template Manager (apenas no modo de edição) */}
       {!isReadOnly && (
@@ -713,6 +583,14 @@ const InfiniteCanvasInner = ({
           funnelName={funnelName}
         />
       )}
+
+      {/* Unsaved Changes Dialog */}
+      <UnsavedChangesDialog
+        isOpen={showSaveDialog}
+        onSaveAndNavigate={handleSaveAndNavigate}
+        onDiscardAndNavigate={handleDiscardAndNavigate}
+        onCancel={handleCancelNavigation}
+      />
 
       {/* Alert Dialog para confirmar exclusão de conexão (apenas no modo de edição) */}
       {!isReadOnly && (

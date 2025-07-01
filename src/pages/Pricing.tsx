@@ -44,7 +44,9 @@ const Pricing = () => {
         "Exportar como imagem/PDF",
         "Suporte prioritário",
         "Análises detalhadas",
-        "Histórico de versões"
+        "Histórico de versões",
+        "Sistema de Metrificação de Resultados",
+        "Dashboard com Métricas Reais"
       ],
       restrictions: [],
       buttonText: "Assinar Mensal",
@@ -69,7 +71,8 @@ const Pricing = () => {
         "Histórico de versões",
         "Acesso antecipado a novas funcionalidades",
         "Consultoria personalizada (1h/mês)",
-        "Integração com ferramentas externas"
+        "Sistema de Metrificação de Resultados",
+        "Dashboard com Métricas Reais"
       ],
       restrictions: [],
       buttonText: "Assinar Anual",

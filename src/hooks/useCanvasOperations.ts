@@ -204,6 +204,7 @@ export const useCanvasOperations = ({
     saveToHistory();
   }, [nodes, setNodes, saveToHistory]);
 
+  // Return the functions that Builder.tsx expects
   return {
     addNode,
     duplicateNode,
@@ -211,6 +212,20 @@ export const useCanvasOperations = ({
     copyNodes,
     pasteNodes,
     deleteSelected,
-    updateNodeContent
+    updateNodeContent,
+    onNodesChange: () => {},
+    onEdgesChange: () => {},
+    onConnect: () => {},
+    updateNodeData: (nodeId: string, updates: Partial<CustomNodeData>) => {
+      setNodes(nodes.map(node => 
+        node.id === nodeId 
+          ? { ...node, data: { ...node.data, ...updates } }
+          : node
+      ));
+    },
+    duplicateSelected: () => {
+      const selectedNodes = nodes.filter(node => node.selected);
+      selectedNodes.forEach(node => duplicateNode(node.id));
+    }
   };
 };

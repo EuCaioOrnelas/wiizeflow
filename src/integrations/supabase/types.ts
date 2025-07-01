@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_creation_tracking: {
+        Row: {
+          created_at: string | null
+          email: string
+          fingerprint: string | null
+          id: string
+          ip_address: unknown
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          fingerprint?: string | null
+          id?: string
+          ip_address: unknown
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          fingerprint?: string | null
+          id?: string
+          ip_address?: unknown
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -65,6 +92,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      dashboard_shares: {
+        Row: {
+          allow_download: boolean
+          created_at: string
+          funnel_id: string
+          id: string
+          owner_id: string
+          share_token: string
+          updated_at: string
+        }
+        Insert: {
+          allow_download?: boolean
+          created_at?: string
+          funnel_id: string
+          id?: string
+          owner_id: string
+          share_token: string
+          updated_at?: string
+        }
+        Update: {
+          allow_download?: boolean
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          owner_id?: string
+          share_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_shares_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funnel_shares: {
         Row: {
@@ -142,6 +207,71 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_metrics: {
+        Row: {
+          calculation_result: number | null
+          calculation_type:
+            | Database["public"]["Enums"]["calculation_type"]
+            | null
+          created_at: string
+          funnel_id: string
+          id: string
+          metric_category: Database["public"]["Enums"]["metric_category"]
+          metric_date: string
+          metric_value: number
+          node_id: string
+          notes: string | null
+          source_node_id: string | null
+          target_node_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calculation_result?: number | null
+          calculation_type?:
+            | Database["public"]["Enums"]["calculation_type"]
+            | null
+          created_at?: string
+          funnel_id: string
+          id?: string
+          metric_category: Database["public"]["Enums"]["metric_category"]
+          metric_date?: string
+          metric_value: number
+          node_id: string
+          notes?: string | null
+          source_node_id?: string | null
+          target_node_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calculation_result?: number | null
+          calculation_type?:
+            | Database["public"]["Enums"]["calculation_type"]
+            | null
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          metric_category?: Database["public"]["Enums"]["metric_category"]
+          metric_date?: string
+          metric_value?: number
+          node_id?: string
+          notes?: string | null
+          source_node_id?: string | null
+          target_node_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_metrics_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
             referencedColumns: ["id"]
           },
         ]
@@ -229,6 +359,8 @@ export type Database = {
           created_at: string | null
           email: string | null
           exclude_from_revenue: boolean | null
+          free_trial_expires_at: string | null
+          free_trial_started_at: string | null
           funnel_count: number | null
           id: string
           monthly_amount: number | null
@@ -247,6 +379,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           exclude_from_revenue?: boolean | null
+          free_trial_expires_at?: string | null
+          free_trial_started_at?: string | null
           funnel_count?: number | null
           id: string
           monthly_amount?: number | null
@@ -265,6 +399,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           exclude_from_revenue?: boolean | null
+          free_trial_expires_at?: string | null
+          free_trial_started_at?: string | null
           funnel_count?: number | null
           id?: string
           monthly_amount?: number | null
@@ -371,6 +507,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      check_ip_account_limit: {
+        Args: { client_ip: unknown }
+        Returns: number
+      }
       get_admin_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -416,6 +556,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_free_trial_expired: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       process_stripe_webhook: {
         Args: {
           event_type: string
@@ -442,6 +586,23 @@ export type Database = {
     }
     Enums: {
       admin_role: "super_admin" | "admin" | "moderator"
+      calculation_type:
+        | "taxa_conversao"
+        | "taxa_qualificacao_leads"
+        | "taxa_oportunidades_mql"
+        | "taxa_fechamento"
+        | "taxa_churn"
+        | "taxa_retencao"
+        | "taxa_recompra"
+        | "taxa_resposta_vendas"
+        | "taxa_follow_up"
+      metric_category:
+        | "visitantes_unicos"
+        | "cliques"
+        | "lead_capturado"
+        | "oportunidades"
+        | "vendas_realizadas"
+        | "pos_venda"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -558,6 +719,25 @@ export const Constants = {
   public: {
     Enums: {
       admin_role: ["super_admin", "admin", "moderator"],
+      calculation_type: [
+        "taxa_conversao",
+        "taxa_qualificacao_leads",
+        "taxa_oportunidades_mql",
+        "taxa_fechamento",
+        "taxa_churn",
+        "taxa_retencao",
+        "taxa_recompra",
+        "taxa_resposta_vendas",
+        "taxa_follow_up",
+      ],
+      metric_category: [
+        "visitantes_unicos",
+        "cliques",
+        "lead_capturado",
+        "oportunidades",
+        "vendas_realizadas",
+        "pos_venda",
+      ],
     },
   },
 } as const

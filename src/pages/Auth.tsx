@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Eye, EyeOff, CheckCircle, XCircle, Mail } from "lucide-react";
+import { Target, Eye, EyeOff, CheckCircle, XCircle, Mail, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from '@supabase/supabase-js';
+import { useNavigate } from "react-router-dom";
+import { useAccountLimiting } from "@/hooks/useAccountLimiting";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,11 +16,13 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Hook para controle de limite de contas
+  const { canCreateAccount, accountCount, loading: limitLoading, trackAccountCreation } = useAccountLimiting();
 
   // Validação de senha forte
   const passwordValidation = {
@@ -33,7 +36,7 @@ const Auth = () => {
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
 
   useEffect(() => {
-    // Verificar se há parâmetros de confirmação na URL
+    // Verificar parâmetros de confirmação na URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const type = urlParams.get('type');
@@ -47,161 +50,102 @@ const Auth = () => {
         description: errorDescription || "Ocorreu um erro durante a confirmação do email.",
         variant: "destructive",
       });
-      // Limpar a URL
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
     if (token && type === 'signup') {
-      console.log('Email confirmation detected, processing...');
-      // Aguardar um pouco para o token ser processado
-      setTimeout(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            toast({
-              title: "Email confirmado!",
-              description: "Sua conta foi confirmada com sucesso. Redirecionando...",
-            });
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 1500);
-          } else {
-            toast({
-              title: "Email confirmado!",
-              description: "Sua conta foi confirmada. Agora você pode fazer login.",
-            });
-            setIsLogin(true);
-            setEmailConfirmationSent(false);
-          }
-        });
-      }, 1000);
-      
-      // Limpar a URL
+      console.log('Email confirmation detected');
+      toast({
+        title: "Email confirmado!",
+        description: "Sua conta foi confirmada com sucesso.",
+      });
+      setIsLogin(true);
+      setEmailConfirmationSent(false);
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
-    // Configurar listener de mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth event:', event, 'Session:', session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in successfully');
-          
-          // Verificar se o perfil existe, se não, criar
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error('Error checking profile:', profileError);
-            }
-
-            if (!profile) {
-              console.log('Creating user profile...');
-              const { error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
-                });
-
-              if (insertError) {
-                console.error('Error creating profile:', insertError);
-                toast({
-                  title: "Aviso",
-                  description: "Conta criada, mas houve um problema ao configurar o perfil. Tente novamente.",
-                  variant: "destructive",
-                });
-                return;
-              }
-            }
-
-            toast({
-              title: "Login realizado!",
-              description: "Redirecionando para o dashboard...",
-            });
-            
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 1000);
-          } catch (error) {
-            console.error('Unexpected error handling profile:', error);
-            toast({
-              title: "Login realizado!",
-              description: "Redirecionando para o dashboard...",
-            });
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 1000);
-          }
-        }
-
-        if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed successfully');
-        }
-      }
-    );
-
     // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Existing session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        console.log('Existing session found, redirecting to dashboard');
-        window.location.href = '/dashboard';
-      }
-    });
+    checkExistingSession();
+  }, []);
 
-    return () => subscription.unsubscribe();
-  }, [toast]);
+  const checkExistingSession = async () => {
+    try {
+      console.log('Checking existing session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error checking session:', error);
+        return;
+      }
+
+      if (session?.user) {
+        console.log('Existing session found, user:', session.user.email);
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    console.log('Attempting login for:', email);
 
     try {
-      console.log('Attempting login for:', email);
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
 
       if (error) {
         console.error('Login error:', error);
+        
+        let errorMessage = "Erro desconhecido";
         if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Erro de Login",
-            description: "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
-            variant: "destructive",
-          });
+          errorMessage = "Email ou senha incorretos. Verifique suas credenciais e tente novamente.";
         } else if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: "Email não confirmado",
-            description: "Verifique seu email e clique no link de confirmação antes de fazer login.",
-            variant: "destructive",
-          });
+          errorMessage = "Verifique seu email e clique no link de confirmação antes de fazer login.";
         } else {
-          toast({
-            title: "Erro de Login",
-            description: error.message,
-            variant: "destructive",
-          });
+          errorMessage = error.message;
         }
+        
+        toast({
+          title: "Erro de Login",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setLoading(false);
         return;
       }
 
-      console.log('Login successful');
+      if (!data.user || !data.session) {
+        console.error('Login returned no user or session');
+        toast({
+          title: "Erro de Login",
+          description: "Não foi possível fazer login. Tente novamente.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('Login successful for:', data.user.email);
+      
+      // Redirecionar imediatamente após login bem-sucedido
+      navigate('/dashboard', { replace: true });
       
     } catch (error: any) {
       console.error('Unexpected login error:', error);
@@ -210,13 +154,21 @@ const Auth = () => {
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password || !name) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!isPasswordValid) {
       toast({
@@ -227,67 +179,71 @@ const Auth = () => {
       return;
     }
 
+    if (!canCreateAccount) {
+      toast({
+        title: "Limite de contas atingido",
+        description: `Você já criou ${accountCount} contas recentemente. Tente novamente mais tarde.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    console.log('Attempting signup for:', email);
 
     try {
-      console.log('Attempting signup for:', email);
-      
-      // Usar a URL de produção diretamente
-      const redirectUrl = 'https://wiizeflow.vcom.br/auth';
-      
-      console.log('Using redirect URL:', redirectUrl);
+      const redirectUrl = window.location.origin + '/auth';
       
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name: name
+            name: name.trim()
           }
         }
       });
 
       if (error) {
         console.error('Signup error:', error);
+        
+        let errorMessage = "Erro desconhecido";
         if (error.message.includes('User already registered')) {
-          toast({
-            title: "Email já cadastrado",
-            description: "Este email já está registrado. Tente fazer login ou use outro email.",
-            variant: "destructive",
-          });
+          errorMessage = "Este email já está registrado. Tente fazer login ou use outro email.";
         } else if (error.message.includes('Password should be at least')) {
-          toast({
-            title: "Senha muito fraca",
-            description: "A senha deve atender aos requisitos de segurança.",
-            variant: "destructive",
-          });
+          errorMessage = "A senha deve atender aos requisitos de segurança.";
         } else {
-          toast({
-            title: "Erro no cadastro",
-            description: error.message,
-            variant: "destructive",
-          });
+          errorMessage = error.message;
         }
+        
+        toast({
+          title: "Erro no cadastro",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setLoading(false);
         return;
       }
 
       console.log('Signup successful:', data);
       
+      // Rastrear criação da conta
+      await trackAccountCreation(email.trim(), data.user?.id);
+      
       if (data.user && !data.session) {
-        // Usuário criado mas precisa confirmar email
         setEmailConfirmationSent(true);
         toast({
           title: "Cadastro realizado!",
-          description: "Verifique seu email para confirmar sua conta. Após confirmar, você poderá fazer login.",
+          description: "Verifique seu email para confirmar sua conta.",
         });
-      } else if (data.session) {
-        // Usuário criado e já logado (email confirmation desabilitado)
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Redirecionando para o dashboard...",
-        });
+      } else if (data.user && data.session) {
+        // Login automático após cadastro
+        console.log('Auto-login successful, redirecting to dashboard');
+        navigate('/dashboard', { replace: true });
       }
+      
+      setLoading(false);
       
     } catch (error: any) {
       console.error('Unexpected signup error:', error);
@@ -296,13 +252,12 @@ const Auth = () => {
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
 
   const handleResendConfirmation = async () => {
-    if (!email) {
+    if (!email || email.trim() === "") {
       toast({
         title: "Email necessário",
         description: "Por favor, insira seu email para reenviar a confirmação.",
@@ -312,13 +267,15 @@ const Auth = () => {
     }
 
     setResendingEmail(true);
+    console.log('Attempting to resend confirmation email to:', email.trim());
 
     try {
-      const redirectUrl = 'https://wiizeflow.vcom.br/auth';
+      const redirectUrl = `${window.location.origin}/auth`;
+      console.log('Using redirect URL:', redirectUrl);
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email,
+        email: email.trim(),
         options: {
           emailRedirectTo: redirectUrl
         }
@@ -326,22 +283,35 @@ const Auth = () => {
 
       if (error) {
         console.error('Resend error:', error);
+        
+        let errorMessage = "Erro desconhecido";
+        if (error.message.includes('Email rate limit exceeded')) {
+          errorMessage = "Limite de envio excedido. Aguarde alguns minutos antes de tentar novamente.";
+        } else if (error.message.includes('User not found')) {
+          errorMessage = "Email não encontrado. Verifique se o email está correto ou crie uma nova conta.";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Email ainda não foi confirmado. Verifique sua caixa de entrada.";
+        } else {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Erro ao reenviar",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
       } else {
+        console.log('Email resent successfully');
         toast({
           title: "Email reenviado!",
-          description: "Verifique sua caixa de entrada e spam.",
+          description: "Verifique sua caixa de entrada e pasta de spam.",
         });
       }
     } catch (error: any) {
       console.error('Unexpected resend error:', error);
       toast({
         title: "Erro inesperado",
-        description: "Ocorreu um erro ao reenviar o email.",
+        description: "Ocorreu um erro ao reenviar o email. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -351,9 +321,7 @@ const Auth = () => {
 
   if (emailConfirmationSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6" style={{
-        background: 'linear-gradient(to bottom right, rgb(240, 253, 250), rgb(255, 255, 255), rgb(209, 250, 229))'
-      }}>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
@@ -404,12 +372,6 @@ const Auth = () => {
                   Voltar para login
                 </Button>
               </div>
-
-              <div className="text-center mt-4">
-                <p className="text-sm text-gray-500">
-                  Não recebeu o email? Verifique sua caixa de spam ou use o botão "Reenviar" acima.
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -418,9 +380,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6" style={{
-      background: 'linear-gradient(to bottom right, rgb(240, 253, 250), rgb(255, 255, 255), rgb(209, 250, 229))'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -439,6 +399,25 @@ const Auth = () => {
           </p>
         </div>
 
+        {/* Account Limit Warning */}
+        {!isLogin && !limitLoading && !canCreateAccount && (
+          <Card className="mb-6 bg-red-50 border-red-200">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div>
+                  <h3 className="font-semibold text-red-800 text-sm">
+                    Limite de contas atingido
+                  </h3>
+                  <p className="text-red-700 text-xs mt-1">
+                    Você já criou {accountCount} contas recentemente. Entre em contato conosco para mais informações.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
@@ -456,7 +435,8 @@ const Auth = () => {
                     placeholder="Seu nome completo"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    required
+                    required={!isLogin}
+                    disabled={loading}
                   />
                 </div>
               )}
@@ -470,6 +450,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
               
@@ -483,6 +464,7 @@ const Auth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={loading}
                   />
                   <Button
                     type="button"
@@ -490,6 +472,7 @@ const Auth = () => {
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
@@ -509,7 +492,7 @@ const Auth = () => {
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.minLength ? { color: 'rgb(6, 214, 160)' } : {}}>
+                        <span className={`text-sm ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`}>
                           Mínimo 8 caracteres
                         </span>
                       </div>
@@ -519,7 +502,7 @@ const Auth = () => {
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasUpperCase ? { color: 'rgb(6, 214, 160)' } : {}}>
+                        <span className={`text-sm ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-red-600'}`}>
                           Pelo menos 1 letra maiúscula
                         </span>
                       </div>
@@ -529,7 +512,7 @@ const Auth = () => {
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasLowerCase ? { color: 'rgb(6, 214, 160)' } : {}}>
+                        <span className={`text-sm ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-red-600'}`}>
                           Pelo menos 1 letra minúscula
                         </span>
                       </div>
@@ -537,9 +520,9 @@ const Auth = () => {
                         {passwordValidation.hasNumber ? (
                           <CheckCircle className="w-4 h-4" style={{ color: 'rgb(6, 214, 160)' }} />
                         ) : (
-                          <XCircle className="w-4 h-4 text-red-500" />
+                          <XCircle className="w-4 w-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasNumber ? { color: 'rgb(6, 214, 160)' } : {}}>
+                        <span className={`text-sm ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`}>
                           Pelo menos 1 número
                         </span>
                       </div>
@@ -549,7 +532,7 @@ const Auth = () => {
                         ) : (
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <span className={`text-sm ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`} style={passwordValidation.hasSpecialChar ? { color: 'rgb(6, 214, 160)' } : {}}>
+                        <span className={`text-sm ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
                           Pelo menos 1 caractere especial (!@#$%^&*)
                         </span>
                       </div>
@@ -562,7 +545,7 @@ const Auth = () => {
                 type="submit" 
                 className="w-full"
                 style={{ backgroundColor: 'rgb(6, 214, 160)' }}
-                disabled={loading || (!isLogin && !isPasswordValid)}
+                disabled={loading || (!isLogin && (!isPasswordValid || !canCreateAccount))}
               >
                 {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar Conta Gratuita')}
               </Button>
@@ -572,14 +555,18 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setIsLogin(!isLogin);
-                  setEmail("");
-                  setPassword("");
-                  setName("");
-                  setEmailConfirmationSent(false);
+                  if (!loading) {
+                    setIsLogin(!isLogin);
+                    setEmail("");
+                    setPassword("");
+                    setName("");
+                    setEmailConfirmationSent(false);
+                    setLoading(false);
+                  }
                 }}
                 className="text-green-600 hover:text-green-700 text-sm font-medium"
                 style={{ color: 'rgb(6, 214, 160)' }}
+                disabled={loading}
               >
                 {isLogin 
                   ? 'Não tem conta? Criar conta gratuita' 
@@ -591,8 +578,9 @@ const Auth = () => {
             <div className="text-center mt-4">
               <button
                 type="button"
-                onClick={() => window.location.href = '/'}
+                onClick={() => navigate('/')}
                 className="text-gray-500 hover:text-gray-700 text-sm"
+                disabled={loading}
               >
                 Voltar para página inicial
               </button>

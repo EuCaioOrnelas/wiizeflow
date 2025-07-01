@@ -21,6 +21,8 @@ import AdminAvisos from "./pages/AdminAvisos";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
+import TrialExpired from "./pages/TrialExpired";
+import { SharedDashboard } from '@/pages/SharedDashboard';
 
 const queryClient = new QueryClient();
 
@@ -31,25 +33,29 @@ function App() {
         <Toaster />
         <Sonner />
         <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/builder/:id" element={<Builder />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/admin-auth" element={<AdminAuth />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/avisos" element={<AdminAvisos />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/payment-canceled" element={<PaymentCanceled />} />
-            <Route path="/shared/:shareToken" element={<SharedFunnel />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <CookieBanner />
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/builder/:id" element={<Builder />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/admin-auth" element={<AdminAuth />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/avisos" element={<AdminAvisos />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-canceled" element={<PaymentCanceled />} />
+              <Route path="/trial-expired" element={<TrialExpired />} />
+              <Route path="/shared/:shareToken" element={<SharedFunnel />} />
+              <Route path="/shared-dashboard/:token" element={<SharedDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <CookieBanner />
+          </div>
         </Router>
       </TooltipProvider>
     </QueryClientProvider>

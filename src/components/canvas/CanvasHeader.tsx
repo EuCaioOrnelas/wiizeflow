@@ -1,18 +1,15 @@
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { 
   Save, 
-  Undo, 
-  Redo, 
-  Edit3,
-  Check,
-  X,
+  Undo2, 
+  Redo2, 
   FolderOpen,
-  Share2
-} from 'lucide-react';
+  Share2,
+  BarChart3
+} from "lucide-react";
 
 interface CanvasHeaderProps {
   funnelName: string;
@@ -26,7 +23,10 @@ interface CanvasHeaderProps {
   onSave: () => void;
   onOpenTemplateManager?: () => void;
   onShareFunnel?: () => void;
+  onOpenDashboard?: () => void;
   isReadOnly?: boolean;
+  hasUnsavedChanges?: boolean;
+  navigateWithGuard?: (path: string) => void;
 }
 
 export const CanvasHeader = ({
@@ -39,146 +39,118 @@ export const CanvasHeader = ({
   onSave,
   onOpenTemplateManager,
   onShareFunnel,
-  isReadOnly = false
+  onOpenDashboard,
+  isReadOnly = false,
+  hasUnsavedChanges = false,
+  navigateWithGuard
 }: CanvasHeaderProps) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingName, setEditingName] = useState(funnelName);
-  const { toast } = useToast();
-
-  const handleStartEdit = () => {
-    if (isReadOnly) return;
-    setIsEditing(true);
-    setEditingName(funnelName);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingName.trim()) {
-      onFunnelNameChange(editingName.trim());
-      setIsEditing(false);
-      toast({
-        title: "Nome atualizado!",
-        description: "O nome do funil foi atualizado com sucesso.",
-      });
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditingName(funnelName);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      handleCancelEdit();
+  const handleDashboardClick = () => {
+    console.log('Dashboard button clicked');
+    if (onOpenDashboard) {
+      console.log('Calling onOpenDashboard');
+      onOpenDashboard();
+    } else {
+      console.log('onOpenDashboard not available');
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex items-center justify-between">
-        {/* Left side - Funnel name */}
         <div className="flex items-center space-x-4">
-          {isEditing && !isReadOnly ? (
-            <div className="flex items-center space-x-2">
-              <Input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="text-lg font-medium w-64"
-                placeholder="Nome do funil"
-                autoFocus
-              />
-              <Button size="sm" onClick={handleSaveEdit}>
-                <Check className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <h1 className="text-lg font-medium text-gray-900 dark:text-white">
-                {funnelName}
-              </h1>
-              {!isReadOnly && (
+          <Input
+            value={funnelName}
+            onChange={(e) => onFunnelNameChange(e.target.value)}
+            className="font-medium text-lg border-none shadow-none focus:shadow-sm max-w-xs"
+            placeholder="Nome do funil"
+            readOnly={isReadOnly}
+          />
+          
+          {hasUnsavedChanges && !isReadOnly && (
+            <span className="text-sm text-orange-600 bg-orange-100 px-2 py-1 rounded">
+              Não salvo
+            </span>
+          )}
+          
+          {!isReadOnly && (
+            <>
+              <Separator orientation="vertical" className="h-6" />
+              
+              <div className="flex items-center space-x-2">
                 <Button
+                  variant="outline"
                   size="sm"
-                  variant="ghost"
-                  onClick={handleStartEdit}
-                  className="p-1 h-auto"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  title="Desfazer"
                 >
-                  <Edit3 className="w-4 h-4" />
+                  <Undo2 className="w-4 h-4" />
                 </Button>
-              )}
-            </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  title="Refazer"
+                >
+                  <Redo2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Right side - Actions */}
-        {!isReadOnly && (
-          <div className="flex items-center space-x-2">
-            {/* Undo/Redo */}
-            <div className="flex items-center space-x-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onUndo}
-                disabled={!canUndo}
-                title="Desfazer (Ctrl+Z)"
-              >
-                <Undo className="w-4 h-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRedo}
-                disabled={!canRedo}
-                title="Refazer (Ctrl+Y)"
-              >
-                <Redo className="w-4 h-4" />
-              </Button>
-            </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDashboardClick}
+            title="Métricas Gerais do Funil"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Métricas Gerais
+          </Button>
+          
+          <Separator orientation="vertical" className="h-6" />
 
-            {/* Templates */}
-            {onOpenTemplateManager && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onOpenTemplateManager}
-                title="Gerenciar Templates"
-              >
-                <FolderOpen className="w-4 h-4" />
-                Templates
-              </Button>
-            )}
+          {onOpenTemplateManager && !isReadOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenTemplateManager}
+              title="Gerenciar Templates"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
+          )}
 
-            {/* Share button */}
-            {onShareFunnel && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onShareFunnel}
-                title="Compartilhar Visualização"
-              >
-                <Share2 className="w-4 h-4" />
-                Compartilhar
-              </Button>
-            )}
+          {onShareFunnel && !isReadOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShareFunnel}
+              title="Compartilhar Funil"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Compartilhar
+            </Button>
+          )}
 
-            {/* Save */}
+          {!isReadOnly && (
             <Button
               size="sm"
               onClick={onSave}
-              title="Salvar (Ctrl+S)"
+              title="Salvar Funil"
+              className={hasUnsavedChanges ? "bg-orange-600 hover:bg-orange-700" : ""}
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 mr-2" />
               Salvar
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </header>
   );
 };

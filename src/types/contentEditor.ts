@@ -17,5 +17,6 @@ export interface ContentItem {
 export interface ContentEditorState {
   title: string;
   description: string;
+  metrics: string;
   contentItems: ContentItem[];
 }

@@ -9,9 +9,10 @@ interface ContentEditorProps {
   onClose: () => void;
   onSave?: (content: NodeContent, elementName?: string) => void;
   isReadOnly?: boolean;
+  funnelId?: string;
 }
 
-export const ContentEditor = ({ node, isOpen, onClose, onSave, isReadOnly = false }: ContentEditorProps) => {
+export const ContentEditor = ({ node, isOpen, onClose, onSave, isReadOnly = false, funnelId }: ContentEditorProps) => {
   return (
     <AdvancedContentEditor
       node={node}
@@ -19,6 +20,7 @@ export const ContentEditor = ({ node, isOpen, onClose, onSave, isReadOnly = fals
       onClose={onClose}
       onSave={onSave}
       isReadOnly={isReadOnly}
+      funnelId={funnelId}
     />
   );
 };

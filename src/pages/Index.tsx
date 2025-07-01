@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -96,7 +97,9 @@ const Index = () => {
         "Até 2 funis",
         "Elementos básicos",
         "Compartilhamento por Link",
-        "Suporte por email"
+        "Suporte por email",
+        "Sistema de Metrificação de Resultados",
+        "Dashboard com Métricas Reais"
       ],
       buttonText: "Começar Grátis",
       popular: false,
@@ -114,8 +117,9 @@ const Index = () => {
         "Compartilhamento por Link",
         "Sistema de Templates",
         "Suporte prioritário via WhatsApp",
-        "Integração com ferramentas",
-        "Sistema de Trackeamento (Em breve)"
+        "Sistema de Trackeamento (Em breve)",
+        "Sistema de Metrificação de Resultados",
+        "Dashboard com Métricas Reais"
       ],
       buttonText: "Assinar Mensal",
       popular: false,
@@ -135,8 +139,9 @@ const Index = () => {
         "Compartilhamento por Link",
         "Sistema de Templates",
         "Suporte prioritário via WhatsApp",
-        "Integração com ferramentas",
         "Sistema de Trackeamento (Em breve)",
+        "Sistema de Metrificação de Resultados",
+        "Dashboard com Métricas Reais",
         "30% de desconto no valor"
       ],
       buttonText: "Assinar Anual",
@@ -568,6 +573,8 @@ const Index = () => {
                   ["Foco em Funis e Mapas Mentais", "✅", "❌", "✅", "❌"],
                   ["Templates Prontos", "✅", "❌", "✅", "❌"],
                   ["Sistema de Trackeamento Integrado", "✅ (em breve)", "❌", "❌", "❌"],
+                  ["Sistema de Metrificação de Resultados", "✅", "❌", "⚠️", "❌"],
+                  ["Dashboard com Métricas Reais", "✅", "❌", "⚠️", "❌"],
                   ["Compartilhamento Visual com Terceiros", "✅", "⚠️", "⚠️", "✅"],
                   ["Acessível e Simples de Usar", "✅", "⚠️", "⚠️", "⚠️"]
                 ].map((row, index) => (
@@ -617,6 +624,14 @@ const Index = () => {
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-[rgb(6,214,160)] mr-2" />
+                    <span>Métricas Reais</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-[rgb(6,214,160)] mr-2" />
+                    <span>Dashboard</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-[rgb(6,214,160)] mr-2" />
                     <span>Fácil de Usar</span>
                   </div>
                 </div>
@@ -646,6 +661,10 @@ const Index = () => {
                       <X className="w-3 h-3 text-red-500 mr-2" />
                       <span>Não foca em funis</span>
                     </div>
+                    <div className="flex items-center">
+                      <X className="w-3 h-3 text-red-500 mr-2" />
+                      <span>Sem métricas</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -671,6 +690,10 @@ const Index = () => {
                     <div className="flex items-center">
                       <Check className="w-3 h-3 text-green-500 mr-2" />
                       <span>Foca em funis</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-yellow-500 mr-2">⚠️</span>
+                      <span>Métricas básicas</span>
                     </div>
                   </div>
                 </CardContent>
@@ -739,19 +762,16 @@ const Index = () => {
                   >
                     {loading ? "Processando..." : plan.buttonText}
                   </Button>
+
+                  {/* Adicionar observação apenas no plano Free */}
+                  {plan.priceId === 'free' && (
+                    <p className="text-xs text-gray-500 text-center mt-3 leading-relaxed">
+                      Teste gratuito de 30 dias sem cartão de crédito. Experimente as principais funcionalidades sem compromisso.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
-          </div>
-          
-          <div className="text-center mt-8">
-            <div className="bg-[#FFD166] bg-opacity-20 p-6 rounded-lg inline-block">
-              <Shield className="w-8 h-8 text-[rgb(6,214,160)] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#2B2D42] mb-1">🎯 Garantia de 30 Dias</h3>
-              <p className="text-gray-600">
-                Se não aumentar suas conversões em 30 dias, devolvemos 100% do seu dinheiro.
-              </p>
-            </div>
           </div>
         </div>
       </section>

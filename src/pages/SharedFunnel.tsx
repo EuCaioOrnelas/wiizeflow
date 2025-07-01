@@ -257,7 +257,7 @@ const SharedFunnel = () => {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
-      {/* Header com informações do funil */}
+      {/* Header simples sem subnavbar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-3 md:py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
@@ -270,7 +270,7 @@ const SharedFunnel = () => {
                 <Eye className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <span className="truncate">{funnelData.name}</span>
               </h1>
-              {funnelData.owner_name && !isMobile && (
+              {funnelData.owner_name && (
                 <p className="text-xs md:text-sm text-gray-500 truncate">
                   Criado por {funnelData.owner_name}
                 </p>
@@ -293,16 +293,9 @@ const SharedFunnel = () => {
             </Button>
           )}
         </div>
-        
-        {/* Nome do proprietário em mobile */}
-        {funnelData.owner_name && isMobile && (
-          <p className="text-xs text-gray-500 mt-1 truncate">
-            Criado por {funnelData.owner_name}
-          </p>
-        )}
       </div>
 
-      {/* Canvas em modo somente leitura */}
+      {/* Canvas em modo somente leitura - sem header e sidebars */}
       <div className="flex-1 overflow-hidden">
         <InfiniteCanvas
           funnelId={funnelData.id}

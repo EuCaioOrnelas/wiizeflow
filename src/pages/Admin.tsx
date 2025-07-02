@@ -2,30 +2,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Target, 
-  Users, 
-  UserCheck, 
-  DollarSign, 
-  Activity,
-  Crown,
-  CreditCard,
-  Gift,
   RefreshCw,
   ArrowLeft,
   LogOut,
-  Bell
+  Bell,
+  Crown
 } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-import { CreateUserDialog } from "@/components/CreateUserDialog";
+import { useAdminMetrics } from "@/hooks/useAdminMetrics";
 import { PaymentFailuresTable } from "@/components/PaymentFailuresTable";
+import { UserGrowthCard } from "@/components/admin/UserGrowthCard";
+import { ConversionCard } from "@/components/admin/ConversionCard";
+import { RevenueCard } from "@/components/admin/RevenueCard";
+import { ChurnCard } from "@/components/admin/ChurnCard";
+import { OptionalMetricsCard } from "@/components/admin/OptionalMetricsCard";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { stats, revenueDetails, loading, isAdmin, logout, refreshStats } = useAdminDashboard();
+  const { loading: authLoading, isAdmin, logout } = useAdminDashboard();
+  const { metrics, loading: metricsLoading, refreshMetrics } = useAdminMetrics();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -41,18 +40,11 @@ const Admin = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refreshStats();
+    await refreshMetrics();
     setRefreshing(false);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  if (loading) {
+  if (authLoading || metricsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -85,7 +77,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Header - mantendo exatamente como estava */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -144,167 +136,55 @@ const Admin = () => {
             Painel Administrativo
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Controle geral da plataforma WiizeFlow
+            Métricas de crescimento e performance do SaaS
           </p>
         </div>
 
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Online Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
-              <Activity className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                {stats?.online_users || 0}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Ativos nos últimos 15 minutos
-              </p>
-            </CardContent>
-          </Card>
+        {metrics && (
+          <>
+            {/* Seção 1: Crescimento de Usuários */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                📈 Crescimento de Usuários
+              </h2>
+              <UserGrowthCard metrics={metrics.userGrowth} />
+            </div>
 
-          {/* Total Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats?.total_users || 0}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Usuários registrados
-              </p>
-            </CardContent>
-          </Card>
+            {/* Seção 2: Conversão */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                🎯 Métricas de Conversão
+              </h2>
+              <ConversionCard metrics={metrics.conversion} />
+            </div>
 
-          {/* Monthly Revenue - Updated to show real values */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receita Mensal Real</CardTitle>
-              <DollarSign className="h-4 w-4" style={{ color: 'rgb(6, 214, 160)' }} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                {formatCurrency(revenueDetails?.total_monthly_revenue || stats?.projected_monthly_revenue || 0)}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Valores reais pagos pelos clientes
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Seção 3: Receita Recorrente */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                💰 Receita Recorrente
+              </h2>
+              <RevenueCard metrics={metrics.revenue} />
+            </div>
 
-        {/* Plan Distribution */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Free Plan Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Plano Gratuito</CardTitle>
-              <Gift className="h-4 w-4 text-gray-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-600">
-                {stats?.free_users || 0}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {stats?.total_users ? 
-                  `${((stats.free_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
-                  '0% dos usuários'
-                }
-              </p>
-            </CardContent>
-          </Card>
+            {/* Seção 4: Churn e Retenção */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                📉 Churn e Retenção
+              </h2>
+              <ChurnCard metrics={metrics.churn} />
+            </div>
 
-          {/* Monthly Plan Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Plano Mensal</CardTitle>
-              <CreditCard className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats?.monthly_users || 0}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {stats?.total_users ? 
-                  `${((stats.monthly_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
-                  '0% dos usuários'
-                }
-              </p>
-            </CardContent>
-          </Card>
+            {/* Seção 5: Métricas Opcionais */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                📊 Informações Adicionais
+              </h2>
+              <OptionalMetricsCard metrics={metrics.optional} />
+            </div>
+          </>
+        )}
 
-          {/* Annual Plan Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Plano Anual</CardTitle>
-              <Crown className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
-                {stats?.annual_users || 0}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {stats?.total_users ? 
-                  `${((stats.annual_users / stats.total_users) * 100).toFixed(1)}% dos usuários` : 
-                  '0% dos usuários'
-                }
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Revenue Breakdown */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <DollarSign className="w-5 h-5 mr-2" style={{ color: 'rgb(6, 214, 160)' }} />
-                Detalhamento da Receita (Valores Reais)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Mensais</p>
-                  <p className="text-xl font-bold text-blue-600">
-                    {formatCurrency(revenueDetails?.monthly_revenue || 0)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {revenueDetails?.monthly_count || 0} usuários - valores reais pagos
-                  </p>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Receita Planos Anuais (mensal)</p>
-                  <p className="text-xl font-bold text-yellow-600">
-                    {formatCurrency(revenueDetails?.annual_monthly_revenue || 0)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {revenueDetails?.annual_count || 0} usuários - valores reais pagos
-                  </p>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Mensal Real</p>
-                  <p className="text-2xl font-bold" style={{ color: 'rgb(6, 214, 160)' }}>
-                    {formatCurrency(revenueDetails?.total_monthly_revenue || stats?.projected_monthly_revenue || 0)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Receita recorrente real (com descontos)
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payment Failures Table */}
+        {/* Sistema de Falhas de Pagamento - mantendo exatamente como estava */}
         <PaymentFailuresTable />
       </main>
     </div>

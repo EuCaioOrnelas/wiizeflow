@@ -15,6 +15,7 @@ import AdminTemplates from './pages/AdminTemplates';
 import TemplatesProntos from './pages/TemplatesProntos';
 import TemplatesUpgrade from './pages/TemplatesUpgrade';
 import SharedFunnel from './pages/SharedFunnel';
+import SharedDashboard from './pages/SharedDashboard';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/templates-prontos" element={<TemplatesProntos />} />
           <Route path="/templates-upgrade" element={<TemplatesUpgrade />} />
           <Route path="/shared/:shareToken" element={<SharedFunnel />} />
+          <Route path="/shared-dashboard/:shareToken" element={<SharedDashboard />} />
         </Routes>
         <Toaster />
       </div>

@@ -18,6 +18,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useToast } from '@/hooks/use-toast';
 import { CustomNode } from './CustomNode';
+import { ImageNode } from './ImageNode';
 import { ContentEditor } from './ContentEditor';
 import { CanvasSidebar } from './CanvasSidebar';
 import { ContextMenu } from './ContextMenu';
@@ -27,10 +28,11 @@ import { useCanvasHistory } from '@/hooks/useCanvasHistory';
 import { useCanvasHotkeys } from '@/hooks/useCanvasHotkeys';
 import { useCanvasOperations } from '@/hooks/useCanvasOperations';
 import { CustomNodeData, InfiniteCanvasProps } from '@/types/canvas';
-import { EdgeTypeSelector } from './EdgeTypeSelector';
+import { DrawingLayer, DrawingPath } from './DrawingLayer';
+import { DrawingControls } from './DrawingControls';
 import { EdgeType } from '@/types/canvas';
 import { Button } from '@/components/ui/button';
-import { Minimize, Maximize } from 'lucide-react';
+import { Minimize, Maximize, PanelLeftOpen, PanelLeftClose, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ShareFunnelDialog } from '@/components/ShareFunnelDialog';
 import {
@@ -50,11 +52,20 @@ import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 // Move nodeTypes outside component to prevent recreation
 const nodeTypes = {
   custom: CustomNode,
+  image: ImageNode,
 };
 
 interface ExtendedInfiniteCanvasProps extends InfiniteCanvasProps {
-  initialCanvasData?: { nodes: Node<CustomNodeData>[]; edges: Edge[] };
-  onSave?: (canvasData: { nodes: Node<CustomNodeData>[]; edges: Edge[] }) => void;
+  initialCanvasData?: { 
+    nodes: Node<CustomNodeData>[]; 
+    edges: Edge[];
+    drawings?: DrawingPath[];
+  };
+  onSave?: (canvasData: { 
+    nodes: Node<CustomNodeData>[]; 
+    edges: Edge[];
+    drawings?: DrawingPath[];
+  }) => void;
   onOpenDashboard?: () => void;
   isReadOnly?: boolean;
 }
@@ -82,10 +93,17 @@ const InfiniteCanvasInner = ({
   const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [userPlan, setUserPlan] = useState<string>('free');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedState, setLastSavedState] = useState<string>('');
+  
+  // Drawing states
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawingColor, setDrawingColor] = useState('#000000');
+  const [strokeWidth, setStrokeWidth] = useState(3);
+  const [drawings, setDrawings] = useState<DrawingPath[]>([]);
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -93,13 +111,13 @@ const InfiniteCanvasInner = ({
 
   // Check for unsaved changes
   useEffect(() => {
-    const currentState = JSON.stringify({ nodes, edges });
+    const currentState = JSON.stringify({ nodes, edges, drawings });
     if (lastSavedState && currentState !== lastSavedState) {
       setHasUnsavedChanges(true);
     } else if (lastSavedState && currentState === lastSavedState) {
       setHasUnsavedChanges(false);
     }
-  }, [nodes, edges, lastSavedState]);
+  }, [nodes, edges, drawings, lastSavedState]);
 
   // Initialize last saved state when initial data loads
   useEffect(() => {
@@ -107,6 +125,17 @@ const InfiniteCanvasInner = ({
       setLastSavedState(JSON.stringify(initialCanvasData));
     }
   }, [initialCanvasData, lastSavedState]);
+
+  // Custom hooks (apenas no modo de edição)
+  const {
+    saveToHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    setHistoryIndex,
+    initializeHistory
+  } = useCanvasHistory();
 
   // Unsaved changes hook
   const {
@@ -119,8 +148,8 @@ const InfiniteCanvasInner = ({
     hasUnsavedChanges,
     onSave: async () => {
       if (onSave) {
-        await onSave({ nodes, edges });
-        const newState = JSON.stringify({ nodes, edges });
+        await onSave({ nodes, edges, drawings });
+        const newState = JSON.stringify({ nodes, edges, drawings });
         setLastSavedState(newState);
         setHasUnsavedChanges(false);
       }
@@ -132,8 +161,11 @@ const InfiniteCanvasInner = ({
     if (initialCanvasData) {
       setNodes(initialCanvasData.nodes || []);
       setEdges(initialCanvasData.edges || []);
+      setDrawings(initialCanvasData.drawings || []);
+      // Inicializar o histórico com o estado inicial
+      initializeHistory(initialCanvasData.nodes || [], initialCanvasData.edges || []);
     }
-  }, [initialCanvasData, setNodes, setEdges]);
+  }, [initialCanvasData, setNodes, setEdges, initializeHistory]);
 
   // Load user plan
   useEffect(() => {
@@ -165,16 +197,6 @@ const InfiniteCanvasInner = ({
     }
   }, [isReadOnly]);
 
-  // Custom hooks (apenas no modo de edição)
-  const {
-    saveToHistory,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    setHistoryIndex
-  } = useCanvasHistory();
-
   const {
     addNode,
     duplicateNode,
@@ -188,7 +210,7 @@ const InfiniteCanvasInner = ({
     edges,
     setNodes,
     setEdges,
-    saveToHistory
+    saveToHistory: (nds, eds) => saveToHistory(nds || nodes, eds || edges)
   });
 
   // Handle node updates (apenas no modo de edição)
@@ -204,7 +226,7 @@ const InfiniteCanvasInner = ({
           : node
       )
     );
-    saveToHistory();
+    saveToHistory(nodes, edges);
   }, [setNodes, saveToHistory, isReadOnly]);
 
   const updateNodeData = useCallback((nodeId: string, updates: Partial<CustomNodeData>) => {
@@ -222,20 +244,41 @@ const InfiniteCanvasInner = ({
   const applyEdgeTypeToAll = useCallback(() => {
     if (isReadOnly) return;
     
-    setEdges((currentEdges) =>
-      currentEdges.map((edge) => ({
-        ...edge,
-        type: currentEdgeType,
-        animated: true,
-        style: { stroke: '#10b981', strokeWidth: 2 },
-      }))
-    );
-    saveToHistory();
+    const newEdges = edges.map((edge) => ({
+      ...edge,
+      type: currentEdgeType,
+      animated: true,
+      style: { stroke: '#10b981', strokeWidth: 2 },
+    }));
+    
+    setEdges(newEdges);
+    saveToHistory(nodes, newEdges);
     toast({
       title: "Tipo de linha aplicado!",
       description: "O novo tipo de linha foi aplicado a todas as conexões existentes.",
     });
-  }, [currentEdgeType, setEdges, saveToHistory, toast, isReadOnly]);
+  }, [currentEdgeType, nodes, edges, setEdges, saveToHistory, toast, isReadOnly]);
+
+  // Drawing functions
+  const handleToggleDrawingMode = useCallback(() => {
+    if (isReadOnly) return;
+    console.log('handleToggleDrawingMode called, current isDrawingMode:', isDrawingMode);
+    setIsDrawingMode(prev => !prev);
+  }, [isDrawingMode, isReadOnly]);
+
+  const handleDrawingComplete = useCallback((drawing: DrawingPath) => {
+    if (isReadOnly) return;
+    setDrawings(prev => [...prev, drawing]);
+  }, [isReadOnly]);
+
+  const handleClearDrawings = useCallback(() => {
+    if (isReadOnly) return;
+    setDrawings([]);
+    toast({
+      title: "Desenhos limpos!",
+      description: "Todos os desenhos foram removidos do canvas.",
+    });
+  }, [isReadOnly, toast]);
 
   const handleLoadTemplate = useCallback((nodes: Node<CustomNodeData>[], edges: Edge[]) => {
     const idMap = new Map();
@@ -259,7 +302,7 @@ const InfiniteCanvasInner = ({
 
     setNodes(newNodes);
     setEdges(newEdges);
-    saveToHistory();
+    saveToHistory(newNodes, newEdges);
     
     toast({
       title: "Template carregado!",
@@ -301,8 +344,8 @@ const InfiniteCanvasInner = ({
     onDelete: isReadOnly ? () => {} : deleteSelected,
     onSave: isReadOnly ? () => {} : () => {
       if (onSave) {
-        onSave({ nodes, edges });
-        const newState = JSON.stringify({ nodes, edges });
+        onSave({ nodes, edges, drawings });
+        const newState = JSON.stringify({ nodes, edges, drawings });
         setLastSavedState(newState);
         setHasUnsavedChanges(false);
       }
@@ -345,10 +388,11 @@ const InfiniteCanvasInner = ({
         animated: true,
         style: { stroke: '#10b981', strokeWidth: 2 },
       };
-      setEdges((eds) => addEdge(newEdge, eds));
-      saveToHistory();
+      const newEdges = addEdge(newEdge, edges);
+      setEdges(newEdges);
+      saveToHistory(nodes, newEdges);
     },
-    [setEdges, saveToHistory, currentEdgeType, isReadOnly]
+    [nodes, edges, setEdges, saveToHistory, currentEdgeType, isReadOnly]
   );
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
@@ -360,24 +404,28 @@ const InfiniteCanvasInner = ({
 
   const confirmDeleteEdge = useCallback(() => {
     if (edgeToDelete && !isReadOnly) {
-      setEdges((edges) => edges.filter((e) => e.id !== edgeToDelete));
-      saveToHistory();
+      const newEdges = edges.filter((e) => e.id !== edgeToDelete);
+      setEdges(newEdges);
+      saveToHistory(nodes, newEdges);
       toast({
         title: "Conexão removida!",
         description: "A conexão foi deletada com sucesso.",
       });
       setEdgeToDelete(null);
     }
-  }, [edgeToDelete, setEdges, saveToHistory, toast, isReadOnly]);
+  }, [edgeToDelete, nodes, edges, setEdges, saveToHistory, toast, isReadOnly]);
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node<CustomNodeData>) => {
     setSelectedNode(node);
   }, []);
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node<CustomNodeData>) => {
+    // No modo read-only, não deve abrir o editor
+    if (isReadOnly) return;
+    
     setSelectedNode(node);
     setIsEditorOpen(true);
-  }, []);
+  }, [isReadOnly]);
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node<CustomNodeData>) => {
     if (isReadOnly) return;
@@ -406,12 +454,12 @@ const InfiniteCanvasInner = ({
 
   const saveFunnel = useCallback(async () => {
     if (onSave && !isReadOnly) {
-      await onSave({ nodes, edges });
-      const newState = JSON.stringify({ nodes, edges });
+      await onSave({ nodes, edges, drawings });
+      const newState = JSON.stringify({ nodes, edges, drawings });
       setLastSavedState(newState);
       setHasUnsavedChanges(false);
     }
-  }, [nodes, edges, onSave, isReadOnly]);
+  }, [nodes, edges, drawings, onSave, isReadOnly]);
 
   // Memoize nodeTypes with isReadOnly context and handleUpdateNode
   const nodeTypesWithReadOnly = useMemo(() => ({
@@ -419,15 +467,22 @@ const InfiniteCanvasInner = ({
       <CustomNode 
         {...props} 
         isReadOnly={isReadOnly} 
-        onUpdateNode={!isReadOnly ? handleUpdateNode : undefined}
+        onUpdateNode={isReadOnly ? () => {} : handleUpdateNode}
+      />
+    ),
+    image: (props: any) => (
+      <ImageNode 
+        {...props} 
+        isReadOnly={isReadOnly} 
+        onUpdateNode={isReadOnly ? () => {} : handleUpdateNode}
       />
     )
   }), [isReadOnly, handleUpdateNode]);
 
   return (
     <div className="w-full h-screen flex bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar sempre visível quando não minimizado e não está em modo read-only */}
-      {!isMinimized && !isReadOnly && (
+      {/* Sidebar - agora com controle de visibilidade */}
+      {!isMinimized && !isReadOnly && isSidebarVisible && (
         <CanvasSidebar 
           showSidebar={true}
           selectedNodeId={selectedNode?.id || null}
@@ -435,6 +490,15 @@ const InfiniteCanvasInner = ({
           updateNodeData={updateNodeData}
           onClose={() => setSelectedNode(null)}
           onAddNode={addNode}
+          onToggleSidebar={() => setIsSidebarVisible(false)}
+          isDrawingMode={isDrawingMode}
+          onToggleDrawingMode={handleToggleDrawingMode}
+          drawingColor={drawingColor}
+          onDrawingColorChange={setDrawingColor}
+          strokeWidth={strokeWidth}
+          onStrokeWidthChange={setStrokeWidth}
+          onClearDrawings={handleClearDrawings}
+          
         />
       )}
       
@@ -457,10 +521,12 @@ const InfiniteCanvasInner = ({
             isReadOnly={isReadOnly}
             hasUnsavedChanges={hasUnsavedChanges}
             navigateWithGuard={navigateWithGuard}
+            isSidebarVisible={isSidebarVisible}
+            onToggleSidebar={() => setIsSidebarVisible(true)}
           />
         )}
 
-        <div className="flex-1" ref={reactFlowWrapper}>
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -468,7 +534,7 @@ const InfiniteCanvasInner = ({
             onEdgesChange={isReadOnly ? () => {} : onEdgesChange}
             onConnect={isReadOnly ? () => {} : onConnect}
             onNodeClick={onNodeClick}
-            onNodeDoubleClick={onNodeDoubleClick}
+            onNodeDoubleClick={isReadOnly ? undefined : onNodeDoubleClick}
             onNodeContextMenu={isReadOnly ? undefined : onNodeContextMenu}
             onPaneContextMenu={isReadOnly ? undefined : onPaneContextMenu}
             onPaneClick={onPaneClick}
@@ -507,24 +573,26 @@ const InfiniteCanvasInner = ({
                   {nodes.length} nós • {edges.length} conexões
                   {isReadOnly && <span className="ml-2 text-blue-600">• Modo Visualização</span>}
                   {hasUnsavedChanges && !isReadOnly && <span className="ml-2 text-orange-600">• Alterações não salvas</span>}
-                </span>
-                {!isMinimized && !isReadOnly && (
-                  <EdgeTypeSelector 
-                    currentType={currentEdgeType}
-                    onTypeChange={setCurrentEdgeType}
-                    onApplyToAll={applyEdgeTypeToAll}
-                  />
-                )}
+                 </span>
+                  {!isMinimized && !isReadOnly && (
+                    <DrawingControls
+                      currentEdgeType={currentEdgeType}
+                      onEdgeTypeChange={setCurrentEdgeType}
+                      onApplyEdgeTypeToAll={applyEdgeTypeToAll}
+                    />
+                  )}
               </div>
             </Panel>
 
             {!isReadOnly && (
               <Panel position="top-right">
+                {/* Botão para minimizar/maximizar */}
                 <Button
                   onClick={() => setIsMinimized(!isMinimized)}
                   variant="outline"
                   size="sm"
                   className="bg-white hover:bg-gray-50 shadow-md"
+                  title={isMinimized ? "Restaurar interface" : "Minimizar interface"}
                 >
                   {isMinimized ? (
                     <Maximize className="w-4 h-4" />
@@ -534,7 +602,18 @@ const InfiniteCanvasInner = ({
                 </Button>
               </Panel>
             )}
+
           </ReactFlow>
+          
+          {/* Drawing Layer - positioned above ReactFlow */}
+          <DrawingLayer
+            isDrawingMode={isDrawingMode}
+            drawingColor={drawingColor}
+            strokeWidth={strokeWidth}
+            drawings={drawings}
+            onDrawingComplete={handleDrawingComplete}
+            onClearDrawings={handleClearDrawings}
+          />
         </div>
       </div>
 

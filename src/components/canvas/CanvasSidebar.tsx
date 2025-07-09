@@ -31,13 +31,29 @@ import {
   UserCheck,
   CheckCircle,
   XCircle,
-  ArrowLeft
+  ArrowLeft,
+  PanelLeftClose,
+  Home,
+  Image,
+  PenTool,
+  Edit3,
+  
+  Trash2,
+  Palette
 } from 'lucide-react';
 import { Node } from '@xyflow/react';
 import { CustomNodeData } from '@/types/canvas';
 import { useNavigate } from 'react-router-dom';
+import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const blockCategories = [
+  {
+    name: 'Ferramentas',
+    expanded: true,
+    isTools: true,
+    blocks: []
+  },
   {
     name: 'Páginas',
     expanded: true,
@@ -81,6 +97,7 @@ const blockCategories = [
     name: 'Outros',
     expanded: true,
     blocks: [
+      { type: 'image', name: 'Imagem', icon: Image, color: 'bg-gray-600' },
       { type: 'text', name: 'Anotação', icon: FileText, color: 'bg-indigo-500' },
       { type: 'wait', name: 'Tempo de espera', icon: Clock, color: 'bg-amber-500' },
       { type: 'formulario', name: 'Formulário', icon: ClipboardList, color: 'bg-violet-500' },
@@ -92,6 +109,12 @@ const blockCategories = [
   }
 ];
 
+const drawingColors = [
+  '#000000', '#FF0000', '#00FF00', '#0000FF', 
+  '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', 
+  '#800080', '#FFC0CB', '#A52A2A', '#808080',
+];
+
 interface CanvasSidebarProps {
   showSidebar: boolean;
   selectedNodeId: string | null;
@@ -99,6 +122,16 @@ interface CanvasSidebarProps {
   updateNodeData: (nodeId: string, updates: Partial<CustomNodeData>) => void;
   onClose: () => void;
   onAddNode?: (type: string, position: { x: number; y: number }) => void;
+  onToggleSidebar?: () => void;
+  // Drawing controls
+  isDrawingMode?: boolean;
+  onToggleDrawingMode?: () => void;
+  drawingColor?: string;
+  onDrawingColorChange?: (color: string) => void;
+  strokeWidth?: number;
+  onStrokeWidthChange?: (width: number) => void;
+  onClearDrawings?: () => void;
+  
 }
 
 export const CanvasSidebar = ({ 
@@ -107,16 +140,27 @@ export const CanvasSidebar = ({
   nodes, 
   updateNodeData, 
   onClose,
-  onAddNode 
+  onAddNode,
+  onToggleSidebar,
+  // Drawing props
+  isDrawingMode = false,
+  onToggleDrawingMode,
+  drawingColor = '#000000',
+  onDrawingColorChange,
+  strokeWidth = 3,
+  onStrokeWidthChange,
+  onClearDrawings,
+  
 }: CanvasSidebarProps) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showInstructions, setShowInstructions] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    'Páginas': true,
-    'Tráfego': true,
-    'Comunicação': true,
-    'Outros': true,
+    'Ferramentas': true,
+    'Páginas': false,
+    'Tráfego': false,
+    'Comunicação': false,
+    'Outros': false,
   });
 
   const toggleCategory = (categoryName: string) => {
@@ -141,7 +185,7 @@ export const CanvasSidebar = ({
       block.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       block.type.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  })).filter(category => category.blocks.length > 0);
+  })).filter(category => category.isTools || category.blocks.length > 0);
 
   // Get selected node if one is selected
   const selectedNode = selectedNodeId ? nodes.find(node => node.id === selectedNodeId) : null;
@@ -167,14 +211,29 @@ export const CanvasSidebar = ({
             </button>
           </>
         ) : (
-          <Button
-            onClick={handleGoHome}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar para Home
-          </Button>
+          <div className="flex items-center justify-between w-full">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Elementos
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGoHome}
+                variant="outline"
+                size="sm"
+                title="Voltar para o Dashboard"
+              >
+                <Home className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={onToggleSidebar}
+                variant="outline"
+                size="sm"
+                title="Ocultar menu lateral"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -240,26 +299,107 @@ export const CanvasSidebar = ({
                   
                   {expandedCategories[category.name] && (
                     <div className="space-y-2">
-                      {category.blocks.map((block) => (
-                        <div
-                          key={block.type}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, block.type)}
-                          className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-grab hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors active:cursor-grabbing"
-                        >
-                          <div className={`w-8 h-8 ${block.color} rounded flex items-center justify-center mr-3 flex-shrink-0`}>
-                            <block.icon className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {block.name}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                              {block.type}
-                            </p>
-                          </div>
+                      {/* Ferramentas de Desenho */}
+                      {category.isTools ? (
+                        <div className="space-y-3">
+                          {/* Toggle Desenho */}
+                          <Button
+                            onClick={onToggleDrawingMode}
+                            variant={isDrawingMode ? "default" : "outline"}
+                            size="sm"
+                            className={`w-full gap-2 transition-all duration-200 ${
+                              isDrawingMode 
+                                ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                                : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                            }`}
+                          >
+                            <PenTool className="w-4 h-4" />
+                            {isDrawingMode ? 'Desativar Desenho' : 'Ativar Desenho'}
+                          </Button>
+
+                          {/* Controles de Desenho */}
+                          {isDrawingMode && (
+                            <div className="bg-muted/50 rounded-lg p-3 space-y-3">
+                              {/* Cores */}
+                              <div>
+                                <label className="text-xs font-medium text-foreground mb-2 block">
+                                  Cor:
+                                </label>
+                                <div className="grid grid-cols-6 gap-2 mb-2">
+                                  {drawingColors.map((color) => (
+                                    <button
+                                      key={color}
+                                       className={`w-6 h-6 rounded border-2 transition-all ${
+                                         drawingColor === color 
+                                           ? 'border-primary scale-110 shadow-lg' 
+                                           : 'border-muted-foreground/20 hover:scale-105'
+                                       }`}
+                                      style={{ backgroundColor: color }}
+                                      onClick={() => onDrawingColorChange?.(color)}
+                                    />
+                                  ))}
+                                </div>
+                                <input
+                                  type="color"
+                                  value={drawingColor}
+                                  onChange={(e) => onDrawingColorChange?.(e.target.value)}
+                                  className="w-full h-6 rounded border border-input cursor-pointer"
+                                />
+                              </div>
+
+                              {/* Grossura */}
+                              <div>
+                                <label className="text-xs font-medium text-foreground mb-2 block">
+                                  Grossura: {strokeWidth}px
+                                </label>
+                                <Slider
+                                  value={[strokeWidth]}
+                                  onValueChange={(value) => onStrokeWidthChange?.(value[0])}
+                                  max={20}
+                                  min={1}
+                                  step={1}
+                                  className="w-full"
+                                />
+                              </div>
+
+                              {/* Ações */}
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={onClearDrawings}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  <span className="text-xs">Limpar</span>
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      ) : (
+                        /* Elementos Normais */
+                        category.blocks.map((block) => (
+                          <div
+                            key={block.type}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, block.type)}
+                            className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-grab hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors active:cursor-grabbing"
+                          >
+                            <div className={`w-8 h-8 ${block.color} rounded flex items-center justify-center mr-3 flex-shrink-0`}>
+                              <block.icon className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {block.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                {block.type}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>

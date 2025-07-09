@@ -172,6 +172,11 @@ export const CustomNode = memo(({ id, data, selected, onUpdateNode, isReadOnly =
   };
 
   const handleOpenEditor = (e: React.MouseEvent) => {
+    // No modo read-only, não deve abrir o editor
+    if (isReadOnly) {
+      return;
+    }
+    
     e.stopPropagation();
     e.preventDefault();
     

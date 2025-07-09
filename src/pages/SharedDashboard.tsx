@@ -1,10 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Eye, BarChart3, TrendingDown, TrendingUp, Users, Download } from 'lucide-react';
+import { ArrowLeft, Eye, BarChart3, TrendingDown, TrendingUp, Users, Download, Filter, X, CalendarIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FunnelDashboardData } from '@/types/metrics';
@@ -33,10 +38,23 @@ const SharedDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  // Estados para filtros de data
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>();
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>();
+
   useEffect(() => {
     console.log('SharedDashboard mounted with shareToken:', shareToken);
     loadSharedDashboard();
   }, [shareToken]);
+
+  useEffect(() => {
+    if (dashboardData) {
+      loadDashboardMetrics(dashboardData.id);
+    }
+  }, [dashboardData, startDate, endDate]);
 
   const loadSharedDashboard = async () => {
     if (!shareToken) {
@@ -128,13 +146,78 @@ const SharedDashboard = () => {
     }
   };
 
+  // Funções para filtros rápidos
+  const setQuickFilter = (filterType: string) => {
+    const now = new Date();
+    let start = '';
+    let end = '';
+
+    switch (filterType) {
+      case 'current-year':
+        start = `${now.getFullYear()}-01-01`;
+        end = `${now.getFullYear()}-12-31`;
+        break;
+      case 'current-month':
+        start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`;
+        break;
+      case 'last-month':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1);
+        start = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-01`;
+        const lastMonthLastDay = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).getDate();
+        end = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-${lastMonthLastDay}`;
+        break;
+      case 'last-3-months':
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2);
+        start = `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`;
+        end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+        break;
+    }
+
+    setStartDate(start);
+    setEndDate(end);
+    setSelectedStartDate(start ? new Date(start) : undefined);
+    setSelectedEndDate(end ? new Date(end) : undefined);
+    setActiveFilter(filterType);
+  };
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setSelectedStartDate(undefined);
+    setSelectedEndDate(undefined);
+    setActiveFilter(null);
+  };
+
+  const handleStartDateSelect = (date: Date | undefined) => {
+    setSelectedStartDate(date);
+    setStartDate(date ? format(date, 'yyyy-MM-dd') : '');
+    setActiveFilter(null);
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    setSelectedEndDate(date);
+    setEndDate(date ? format(date, 'yyyy-MM-dd') : '');
+    setActiveFilter(null);
+  };
+
   const loadDashboardMetrics = async (funnelId: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('node_metrics')
-        .select('metric_category, metric_value')
-        .eq('funnel_id', funnelId)
-        .order('created_at', { ascending: false });
+        .select('metric_category, metric_value, metric_date')
+        .eq('funnel_id', funnelId);
+
+      // Aplicar filtros de data se definidos
+      if (startDate) {
+        query = query.gte('metric_date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('metric_date', endDate);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -246,41 +329,163 @@ const SharedDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-3 md:py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
-            <Button variant="ghost" size={isMobile ? "sm" : "default"} onClick={() => navigate('/')} className="flex-shrink-0">
-              <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
-              {!isMobile && "Voltar"}
-            </Button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-sm md:text-lg font-medium text-gray-900 dark:text-white flex items-center gap-1 md:gap-2 truncate">
-                <Eye className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
-                <span className="truncate">Dashboard - {dashboardData.name}</span>
-              </h1>
-              {dashboardData.owner_name && (
-                <p className="text-xs md:text-sm text-gray-500 truncate">
-                  Criado por {dashboardData.owner_name}
-                </p>
-              )}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-6xl mx-auto px-3 md:px-6 py-3 md:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
+              <Button variant="ghost" size={isMobile ? "sm" : "default"} onClick={() => navigate('/')} className="flex-shrink-0">
+                <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
+                {!isMobile && "Voltar"}
+              </Button>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-sm md:text-lg font-medium text-gray-900 dark:text-white flex items-center gap-1 md:gap-2 truncate">
+                  <Eye className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                  <span className="truncate">Dashboard - {dashboardData.name}</span>
+                </h1>
+                {dashboardData.owner_name && (
+                  <p className="text-xs md:text-sm text-gray-500 truncate">
+                    Criado por {dashboardData.owner_name}
+                  </p>
+                )}
+              </div>
             </div>
+            {dashboardData.allow_download && (
+              <Button
+                onClick={handleDownload}
+                variant="outline"
+                size={isMobile ? "sm" : "default"}
+                className="flex-shrink-0"
+              >
+                <Download className="w-4 h-4 mr-1 md:mr-2" />
+                {!isMobile && "Download"}
+              </Button>
+            )}
           </div>
-          {dashboardData.allow_download && (
-            <Button
-              onClick={handleDownload}
-              variant="outline"
-              size={isMobile ? "sm" : "default"}
-              className="flex-shrink-0"
-            >
-              <Download className="w-4 h-4 mr-1 md:mr-2" />
-              {!isMobile && "Download"}
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Dashboard Content */}
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        {/* Filtros de Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filtros por Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Filtros Rápidos */}
+            <div>
+              <Label className="text-sm font-medium">Filtros Rápidos</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Button
+                  variant={activeFilter === 'current-year' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('current-year')}
+                >
+                  Ano Atual
+                </Button>
+                <Button
+                  variant={activeFilter === 'current-month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('current-month')}
+                >
+                  Mês Atual
+                </Button>
+                <Button
+                  variant={activeFilter === 'last-month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('last-month')}
+                >
+                  Mês Passado
+                </Button>
+                <Button
+                  variant={activeFilter === 'last-3-months' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('last-3-months')}
+                >
+                  Últimos 3 Meses
+                </Button>
+                {(startDate || endDate || activeFilter) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Campos de Data Customizados */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">
+                  Data Inicial
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal mt-1"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedStartDate ? format(selectedStartDate, "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedStartDate}
+                      onSelect={handleStartDateSelect}
+                      className="pointer-events-auto"
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">
+                  Data Final
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal mt-1"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedEndDate ? format(selectedEndDate, "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedEndDate}
+                      onSelect={handleEndDateSelect}
+                      className="pointer-events-auto"
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Indicador de Filtro Ativo */}
+            {(startDate || endDate) && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  Filtro ativo: {startDate || 'Início'} até {endDate || 'Fim'}
+                </Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Funil Visual */}
         <Card>
           <CardHeader>

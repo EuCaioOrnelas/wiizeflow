@@ -9,7 +9,7 @@ interface UseCanvasOperationsProps {
   edges: Edge[];
   setNodes: (nodes: Node<CustomNodeData>[]) => void;
   setEdges: (edges: Edge[]) => void;
-  saveToHistory: () => void;
+  saveToHistory: (nodes: Node<CustomNodeData>[], edges: Edge[]) => void;
 }
 
 export const useCanvasOperations = ({
@@ -78,6 +78,8 @@ export const useCanvasOperations = ({
         return 'Venda Fechada';
       case 'vendaperdida':
         return 'Venda Perdida';
+      case 'image':
+        return 'Imagem';
       case 'other':
         return 'Customizado';
       default:
@@ -86,9 +88,10 @@ export const useCanvasOperations = ({
   };
 
   const addNode = useCallback((type: string, position: { x: number; y: number }) => {
+    const nodeType = type === 'image' ? 'image' : 'custom';
     const newNode: Node<CustomNodeData> = {
       id: `node-${Date.now()}`,
-      type: 'custom',
+      type: nodeType,
       position,
       data: {
         label: getNodeLabel(type),
@@ -97,11 +100,17 @@ export const useCanvasOperations = ({
         hasContent: false,
         customIcon: type === 'other' ? '📝' : undefined,
         customColor: type === 'other' ? '#6B7280' : undefined,
+        // Default dimensions for image nodes
+        ...(type === 'image' && {
+          width: 200,
+          height: 150,
+        }),
       },
     };
-    setNodes([...nodes, newNode]);
-    saveToHistory();
-  }, [nodes, setNodes, saveToHistory]);
+    const newNodes = [...nodes, newNode];
+    setNodes(newNodes);
+    saveToHistory(newNodes, edges);
+  }, [nodes, edges, setNodes, saveToHistory]);
 
   const duplicateNode = useCallback((nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
@@ -114,15 +123,18 @@ export const useCanvasOperations = ({
           y: node.position.y + 50,
         },
       };
-      setNodes([...nodes, newNode]);
-      saveToHistory();
+      const newNodes = [...nodes, newNode];
+      setNodes(newNodes);
+      saveToHistory(newNodes, edges);
     }
-  }, [nodes, setNodes, saveToHistory]);
+  }, [nodes, edges, setNodes, saveToHistory]);
 
   const deleteNode = useCallback((nodeId: string) => {
-    setNodes(nodes.filter(n => n.id !== nodeId));
-    setEdges(edges.filter(e => e.source !== nodeId && e.target !== nodeId));
-    saveToHistory();
+    const newNodes = nodes.filter(n => n.id !== nodeId);
+    const newEdges = edges.filter(e => e.source !== nodeId && e.target !== nodeId);
+    setNodes(newNodes);
+    setEdges(newEdges);
+    saveToHistory(newNodes, newEdges);
   }, [nodes, edges, setNodes, setEdges, saveToHistory]);
 
   const copyNodes = useCallback(() => {
@@ -165,9 +177,11 @@ export const useCanvasOperations = ({
         target: idMap.get(edge.target),
       }));
 
-      setNodes([...nodes, ...newNodes]);
-      setEdges([...edges, ...newEdges]);
-      saveToHistory();
+      const allNodes = [...nodes, ...newNodes];
+      const allEdges = [...edges, ...newEdges];
+      setNodes(allNodes);
+      setEdges(allEdges);
+      saveToHistory(allNodes, allEdges);
       
       toast({
         title: "Colado!",
@@ -180,15 +194,17 @@ export const useCanvasOperations = ({
     const selectedNodes = nodes.filter(node => node.selected);
     const selectedNodeIds = selectedNodes.map(node => node.id);
     
-    setNodes(nodes.filter(node => !node.selected));
-    setEdges(edges.filter(edge => 
+    const newNodes = nodes.filter(node => !node.selected);
+    const newEdges = edges.filter(edge => 
       !selectedNodeIds.includes(edge.source) && !selectedNodeIds.includes(edge.target)
-    ));
-    saveToHistory();
+    );
+    setNodes(newNodes);
+    setEdges(newEdges);
+    saveToHistory(newNodes, newEdges);
   }, [nodes, edges, setNodes, setEdges, saveToHistory]);
 
   const updateNodeContent = useCallback((nodeId: string, content: NodeContent, elementName?: string) => {
-    setNodes(nodes.map(node => 
+    const updatedNodes = nodes.map(node => 
       node.id === nodeId 
         ? { 
             ...node, 
@@ -200,9 +216,10 @@ export const useCanvasOperations = ({
             }
           }
         : node
-    ));
-    saveToHistory();
-  }, [nodes, setNodes, saveToHistory]);
+    );
+    setNodes(updatedNodes);
+    saveToHistory(updatedNodes, edges);
+  }, [nodes, edges, setNodes, saveToHistory]);
 
   // Return the functions that Builder.tsx expects
   return {

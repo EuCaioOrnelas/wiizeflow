@@ -16,11 +16,16 @@ export interface CustomNodeData extends Record<string, unknown> {
   customIcon?: string; // For emoji
   customColor?: string; // For icon background color
   nodeColor?: string; // For node background color
+  // Image-specific properties
+  imageUrl?: string;
+  width?: number;
+  height?: number;
 }
 
 export interface CanvasState {
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
+  drawings?: import('../components/canvas/DrawingLayer').DrawingPath[];
 }
 
 export interface InfiniteCanvasProps {

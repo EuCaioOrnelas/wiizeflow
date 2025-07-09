@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,8 +32,10 @@ const SharedFunnel = () => {
 
   useEffect(() => {
     console.log('SharedFunnel mounted with shareToken:', shareToken);
-    loadSharedFunnel();
-    checkCurrentUser();
+    if (shareToken) {
+      loadSharedFunnel();
+      checkCurrentUser();
+    }
   }, [shareToken]);
 
   const checkCurrentUser = async () => {
